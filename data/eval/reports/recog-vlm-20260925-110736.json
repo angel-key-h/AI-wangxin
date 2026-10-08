@@ -1,0 +1,68 @@
+{
+  "engine": "vlm",
+  "table": {
+    "clean": {
+      "header_acc": 0.559322033898305,
+      "cell_recall": 0.7994269340974212,
+      "struct_rate": 0.9166666666666666,
+      "cell_precision": 0.8109090909090909,
+      "cell_f1": 0.8036036036036035,
+      "header_precision": 0.5409836065573771,
+      "header_recall": 0.7021276595744681,
+      "header_f1": 0.611111111111111,
+      "errors": 0,
+      "n": 12
+    },
+    "skew2": {
+      "header_acc": 0.559322033898305,
+      "cell_recall": 0.8194842406876791,
+      "struct_rate": 1.0,
+      "cell_precision": 0.8113879003558719,
+      "cell_f1": 0.8128342245989304,
+      "header_precision": 0.5238095238095238,
+      "header_recall": 0.7021276595744681,
+      "header_f1": 0.6,
+      "errors": 0,
+      "n": 12
+    },
+    "blur": {
+      "header_acc": 0.559322033898305,
+      "cell_recall": 0.8166189111747851,
+      "struct_rate": 1.0,
+      "cell_precision": 0.8165467625899281,
+      "cell_f1": 0.8136200716845878,
+      "header_precision": 0.5409836065573771,
+      "header_recall": 0.7021276595744681,
+      "header_f1": 0.611111111111111,
+      "errors": 0,
+      "n": 12
+    },
+    "lowres": {
+      "header_acc": 0.5423728813559322,
+      "cell_recall": 0.7535816618911175,
+      "struct_rate": 1.0,
+      "cell_precision": 0.7745454545454545,
+      "cell_f1": 0.7675675675675676,
+      "header_precision": 0.5333333333333333,
+      "header_recall": 0.6808510638297872,
+      "header_f1": 0.5981308411214953,
+      "errors": 0,
+      "n": 12
+    }
+  },
+  "formula": {
+    "char_recall": 0.9673469387755103,
+    "exact": 2,
+    "n": 10
+  },
+  "chart": {
+    "is_table": false,
+    "value_recall": 1.0,
+    "blocks": 0,
+    "mapping_verified": true,
+    "mapping_hit": 5,
+    "mapping_total": 5,
+    "chart_type": "bar",
+    "raw": "{\"chart_type\": \"bar\", \"categories\": [\"Table\", \"Chart\", \"Formula\", \"Hand-written\", \"Text\"], \"values\": [2273, 919, 2143, 349, 3272], \"title\": \"OHR-Bench evidence type distribution\", \"x_label\": \"Evidence Type\", \"y_label\": \"count\"}"
+  }
+}

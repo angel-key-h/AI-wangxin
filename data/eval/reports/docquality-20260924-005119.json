@@ -1,0 +1,464 @@
+{
+  "A_monotonic_rate": 0.975,
+  "A_tier_means": {
+    "gt_text": 41.04,
+    "formatting_noise_mild": 41.957499999999996,
+    "formatting_noise_moderate": 42.9375,
+    "formatting_noise_severe": 42.292500000000004
+  },
+  "B_recall": {
+    "clean": 0,
+    "rot180": 1.0,
+    "rot5": 1.0,
+    "blur": 1.0,
+    "lowres": 1.0
+  },
+  "B_clean_fp": 0,
+  "B_clean_n": 3,
+  "traditional": {
+    "simple": 0,
+    "traditional": 7
+  },
+  "A_details": [
+    {
+      "doc": "news/07_17",
+      "page": "0",
+      "scores": {
+        "gt_text": 20.1,
+        "formatting_noise_mild": 20.2,
+        "formatting_noise_moderate": 21.0,
+        "formatting_noise_severe": 20.6
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "manual/dgx_a100",
+      "page": "34",
+      "scores": {
+        "gt_text": 10.9,
+        "formatting_noise_mild": 13.1,
+        "formatting_noise_moderate": 14.4,
+        "formatting_noise_severe": 13.1
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "law/WHITESMOKE,INC_11_08_2011-EX-10.26-PROMOTION AND DISTRIBUTION AGREEMENT",
+      "page": "25",
+      "scores": {
+        "gt_text": 15.0,
+        "formatting_noise_mild": 15.2,
+        "formatting_noise_moderate": 15.2,
+        "formatting_noise_severe": 15.2
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "paper/2310.11511v1",
+      "page": "2",
+      "scores": {
+        "gt_text": 45.5,
+        "formatting_noise_mild": 45.6,
+        "formatting_noise_moderate": 47.4,
+        "formatting_noise_severe": 45.9
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "paper/2405.14458v1",
+      "page": "15",
+      "scores": {
+        "gt_text": 59.7,
+        "formatting_noise_mild": 59.8,
+        "formatting_noise_moderate": 65.0,
+        "formatting_noise_severe": 61.1
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "law/Array BioPharma Inc. - LICENSE, DEVELOPMENT AND COMMERCIALIZATION AGREEMENT",
+      "page": "20",
+      "scores": {
+        "gt_text": 15.0,
+        "formatting_noise_mild": 15.2,
+        "formatting_noise_moderate": 15.2,
+        "formatting_noise_severe": 15.2
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "finance/JPMORGAN_2022_10K",
+      "page": "138",
+      "scores": {
+        "gt_text": 60.4,
+        "formatting_noise_mild": 61.7,
+        "formatting_noise_moderate": 62.9,
+        "formatting_noise_severe": 62.1
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "paper/2403.20330v2",
+      "page": "11",
+      "scores": {
+        "gt_text": 69.8,
+        "formatting_noise_mild": 70.0,
+        "formatting_noise_moderate": 70.0,
+        "formatting_noise_severe": 70.0
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "manual/User_Manual_1500S_Classic_EN",
+      "page": "63",
+      "scores": {
+        "gt_text": 36.2,
+        "formatting_noise_mild": 37.9,
+        "formatting_noise_moderate": 41.4,
+        "formatting_noise_severe": 39.3
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "law/WHITESMOKE,INC_11_08_2011-EX-10.26-PROMOTION AND DISTRIBUTION AGREEMENT",
+      "page": "15",
+      "scores": {
+        "gt_text": 16.9,
+        "formatting_noise_mild": 18.1,
+        "formatting_noise_moderate": 18.1,
+        "formatting_noise_severe": 18.1
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "finance/JPMORGAN_2022_10K",
+      "page": "275",
+      "scores": {
+        "gt_text": 72.1,
+        "formatting_noise_mild": 72.9,
+        "formatting_noise_moderate": 76.9,
+        "formatting_noise_severe": 73.7
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "finance/JPMORGAN_2023Q2_10Q",
+      "page": "155",
+      "scores": {
+        "gt_text": 79.2,
+        "formatting_noise_mild": 80.7,
+        "formatting_noise_moderate": 83.5,
+        "formatting_noise_severe": 81.3
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "textbook/fa7aec4efb728534ef32c172197c9560097c6d0e4893fe6b20242a566ef033d1.pdf_4",
+      "page": "0",
+      "scores": {
+        "gt_text": 63.2,
+        "formatting_noise_mild": 65.2,
+        "formatting_noise_moderate": 66.1,
+        "formatting_noise_severe": 65.6
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "finance/JPMORGAN_2021Q1_10Q",
+      "page": "28",
+      "scores": {
+        "gt_text": 79.2,
+        "formatting_noise_mild": 79.4,
+        "formatting_noise_moderate": 80.5,
+        "formatting_noise_severe": 79.7
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "law/FIDELITYNATIONALINFORMATIONSERVICES,INC_08_05_2009-EX-10.3-INTELLECTUAL PROPERTY AGREEMENT",
+      "page": "13",
+      "scores": {
+        "gt_text": 15.0,
+        "formatting_noise_mild": 15.4,
+        "formatting_noise_moderate": 15.4,
+        "formatting_noise_severe": 15.4
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "finance/JPMORGAN_2022Q2_10Q",
+      "page": "42",
+      "scores": {
+        "gt_text": 64.9,
+        "formatting_noise_mild": 65.3,
+        "formatting_noise_moderate": 68.3,
+        "formatting_noise_severe": 66.0
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "paper/2305.14160v4",
+      "page": "6",
+      "scores": {
+        "gt_text": 64.0,
+        "formatting_noise_mild": 65.0,
+        "formatting_noise_moderate": 69.2,
+        "formatting_noise_severe": 66.3
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "finance/3M_2023Q2_10Q",
+      "page": "42",
+      "scores": {
+        "gt_text": 15.1,
+        "formatting_noise_mild": 15.1,
+        "formatting_noise_moderate": 15.1,
+        "formatting_noise_severe": 15.1
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "finance/JPMORGAN_2022_10K",
+      "page": "123",
+      "scores": {
+        "gt_text": 72.3,
+        "formatting_noise_mild": 74.3,
+        "formatting_noise_moderate": 76.0,
+        "formatting_noise_severe": 75.7
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "law/OPTIMIZEDTRANSPORTATIONMANAGEMENT,INC_07_26_2000-EX-6.6-DISTRIBUTOR AGREEMENT",
+      "page": "1",
+      "scores": {
+        "gt_text": 21.0,
+        "formatting_noise_mild": 21.1,
+        "formatting_noise_moderate": 21.6,
+        "formatting_noise_severe": 21.1
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "finance/AMAZON_2017_10K",
+      "page": "78",
+      "scores": {
+        "gt_text": 59.3,
+        "formatting_noise_mild": 60.3,
+        "formatting_noise_moderate": 58.7,
+        "formatting_noise_severe": 60.5
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "manual/t480_ug_en",
+      "page": "18",
+      "scores": {
+        "gt_text": 3.4,
+        "formatting_noise_mild": 3.4,
+        "formatting_noise_moderate": 3.4,
+        "formatting_noise_severe": 3.4
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "law/BANUESTRAFINANCIALCORP_09_08_2006-EX-10.16-AGENCY AGREEMENT",
+      "page": "1",
+      "scores": {
+        "gt_text": 21.0,
+        "formatting_noise_mild": 21.0,
+        "formatting_noise_moderate": 21.3,
+        "formatting_noise_severe": 21.0
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "law/WOMENSGOLFUNLIMITEDINC_03_29_2000-EX-10.13-ENDORSEMENT AGREEMENT",
+      "page": "6",
+      "scores": {
+        "gt_text": 15.0,
+        "formatting_noise_mild": 15.0,
+        "formatting_noise_moderate": 15.0,
+        "formatting_noise_severe": 15.0
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "finance/VERIZON_2021_10K",
+      "page": "72",
+      "scores": {
+        "gt_text": 63.4,
+        "formatting_noise_mild": 65.0,
+        "formatting_noise_moderate": 60.0,
+        "formatting_noise_severe": 65.2
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "finance/AES_2022_10K",
+      "page": "146",
+      "scores": {
+        "gt_text": 54.9,
+        "formatting_noise_mild": 56.1,
+        "formatting_noise_moderate": 60.0,
+        "formatting_noise_severe": 59.3
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "paper/2305.02437v3",
+      "page": "17",
+      "scores": {
+        "gt_text": 73.0,
+        "formatting_noise_mild": 72.8,
+        "formatting_noise_moderate": 73.7,
+        "formatting_noise_severe": 73.1
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "law/WHITESMOKE,INC_11_08_2011-EX-10.26-PROMOTION AND DISTRIBUTION AGREEMENT",
+      "page": "19",
+      "scores": {
+        "gt_text": 8.8,
+        "formatting_noise_mild": 11.8,
+        "formatting_noise_moderate": 15.5,
+        "formatting_noise_severe": 11.8
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "finance/AMD_2022_10K",
+      "page": "118",
+      "scores": {
+        "gt_text": 11.1,
+        "formatting_noise_mild": 11.1,
+        "formatting_noise_moderate": 11.1,
+        "formatting_noise_severe": 11.1
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "manual/Guide-for-international-students-web",
+      "page": "44",
+      "scores": {
+        "gt_text": 11.6,
+        "formatting_noise_mild": 11.6,
+        "formatting_noise_moderate": 11.6,
+        "formatting_noise_severe": 11.6
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "manual/DSA-278777",
+      "page": "5",
+      "scores": {
+        "gt_text": 33.8,
+        "formatting_noise_mild": 36.2,
+        "formatting_noise_moderate": 37.8,
+        "formatting_noise_severe": 36.2
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "manual/User_Manual_1500S_Classic_EN",
+      "page": "14",
+      "scores": {
+        "gt_text": 1.6,
+        "formatting_noise_mild": 2.3,
+        "formatting_noise_moderate": 2.3,
+        "formatting_noise_severe": 2.3
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "finance/JPMORGAN_2022_10K",
+      "page": "218",
+      "scores": {
+        "gt_text": 27.0,
+        "formatting_noise_mild": 30.2,
+        "formatting_noise_moderate": 31.9,
+        "formatting_noise_severe": 31.0
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "finance/JPMORGAN_2021Q1_10Q",
+      "page": "80",
+      "scores": {
+        "gt_text": 78.8,
+        "formatting_noise_mild": 79.6,
+        "formatting_noise_moderate": 81.4,
+        "formatting_noise_severe": 79.9
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "finance/AMAZON_2017_10K",
+      "page": "16",
+      "scores": {
+        "gt_text": 38.7,
+        "formatting_noise_mild": 42.1,
+        "formatting_noise_moderate": 40.1,
+        "formatting_noise_severe": 42.0
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "law/ASIANDRAGONGROUPINC_08_11_2005-EX-10.5-Reseller Agreement",
+      "page": "6",
+      "scores": {
+        "gt_text": 15.0,
+        "formatting_noise_mild": 15.9,
+        "formatting_noise_moderate": 15.9,
+        "formatting_noise_severe": 15.9
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "finance/JPMORGAN_2022_10K",
+      "page": "97",
+      "scores": {
+        "gt_text": 75.8,
+        "formatting_noise_mild": 77.1,
+        "formatting_noise_moderate": 79.6,
+        "formatting_noise_severe": 77.9
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "manual/t480_ug_en",
+      "page": "30",
+      "scores": {
+        "gt_text": 47.0,
+        "formatting_noise_mild": 48.5,
+        "formatting_noise_moderate": 52.1,
+        "formatting_noise_severe": 49.6
+      },
+      "monotonic": true
+    },
+    {
+      "doc": "paper/2402.03216v4",
+      "page": "7",
+      "scores": {
+        "gt_text": 75.0,
+        "formatting_noise_mild": 75.0,
+        "formatting_noise_moderate": 69.0,
+        "formatting_noise_severe": 72.0
+      },
+      "monotonic": false
+    },
+    {
+      "doc": "finance/JPMORGAN_2023Q2_10Q",
+      "page": "11",
+      "scores": {
+        "gt_text": 31.9,
+        "formatting_noise_mild": 32.1,
+        "formatting_noise_moderate": 33.9,
+        "formatting_noise_severe": 32.4
+      },
+      "monotonic": true
+    }
+  ]
+}

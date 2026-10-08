@@ -1,0 +1,28 @@
+# 精准问数/问答智能体 · 依赖
+streamlit
+pandas
+openpyxl
+python-dotenv
+langgraph
+langchain-core
+langchain-openai
+langchain-community
+langchain-chroma
+langchain-text-splitters
+chromadb
+pypdf
+SQLAlchemy
+# 图片识别（OCR 主线）：RapidOCR 自带模型，离线可用
+rapidocr-onnxruntime
+onnxruntime
+Pillow
+# 评测与数据集（读 OHR-Bench parquet / 出评测报告）
+pyarrow
+tabulate
+# 文档与图表（生成多格式知识库文档、画性能对比图）
+matplotlib
+python-docx
+python-pptx
+reportlab
+# 繁→简转换（难题 9「繁体字识别并校正」）
+zhconv

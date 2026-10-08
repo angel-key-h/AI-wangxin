@@ -1,0 +1,28 @@
+{
+  "summary": {
+    "semantic_noise_mild": {
+      "pages": 3,
+      "cer_before": 0.005785857816390005,
+      "cer_after": 0.005785857816390005,
+      "rel_drop_pct": 0.0,
+      "changes": 0,
+      "hit": 0,
+      "miss": 0,
+      "traditional": 0,
+      "rejected": 0
+    },
+    "semantic_noise_moderate": {
+      "pages": 3,
+      "cer_before": 0.12157664882794238,
+      "cer_after": 0.12157664882794238,
+      "rel_drop_pct": 0.0,
+      "changes": 0,
+      "hit": 0,
+      "miss": 0,
+      "traditional": 0,
+      "rejected": 0
+    }
+  },
+  "traditional_ok": true,
+  "miss_rate": 0.0
+}

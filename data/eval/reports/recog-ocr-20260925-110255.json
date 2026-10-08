@@ -1,0 +1,64 @@
+{
+  "engine": "ocr",
+  "table": {
+    "clean": {
+      "header_acc": 0.4067796610169492,
+      "cell_recall": 0.6131805157593123,
+      "struct_rate": 0.75,
+      "cell_precision": 0.6115384615384616,
+      "cell_f1": 0.5888888888888889,
+      "header_precision": 0.41379310344827586,
+      "header_recall": 0.5106382978723404,
+      "header_f1": 0.4571428571428571,
+      "errors": 0,
+      "n": 12
+    },
+    "skew2": {
+      "header_acc": 0.3389830508474576,
+      "cell_recall": 0.5702005730659025,
+      "struct_rate": 0.75,
+      "cell_precision": 0.583969465648855,
+      "cell_f1": 0.5645756457564575,
+      "header_precision": 0.37037037037037035,
+      "header_recall": 0.425531914893617,
+      "header_f1": 0.39603960396039606,
+      "errors": 0,
+      "n": 12
+    },
+    "blur": {
+      "header_acc": 0.423728813559322,
+      "cell_recall": 0.5472779369627507,
+      "struct_rate": 0.75,
+      "cell_precision": 0.57421875,
+      "cell_f1": 0.5485074626865671,
+      "header_precision": 0.4528301886792453,
+      "header_recall": 0.5106382978723404,
+      "header_f1": 0.48,
+      "errors": 0,
+      "n": 12
+    },
+    "lowres": {
+      "header_acc": 0.3559322033898305,
+      "cell_recall": 0.5730659025787965,
+      "struct_rate": 0.6666666666666666,
+      "cell_precision": 0.604,
+      "cell_f1": 0.569811320754717,
+      "header_precision": 0.3584905660377358,
+      "header_recall": 0.40425531914893614,
+      "header_f1": 0.38,
+      "errors": 0,
+      "n": 12
+    }
+  },
+  "formula": {
+    "char_recall": 0.2816326530612245,
+    "exact": 0,
+    "n": 10
+  },
+  "chart": {
+    "is_table": true,
+    "value_recall": 1.0,
+    "blocks": 12,
+    "mapping_verified": false
+  }
+}

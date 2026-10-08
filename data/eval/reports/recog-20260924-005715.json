@@ -1,0 +1,34 @@
+{
+  "table": {
+    "clean": {
+      "header_acc": 0.5576923076923077,
+      "cell_recall": 0.4879120879120879,
+      "struct_rate": 0.7272727272727273
+    },
+    "skew2": {
+      "header_acc": 0.3584905660377358,
+      "cell_recall": 0.4393063583815029,
+      "struct_rate": 0.7272727272727273
+    },
+    "blur": {
+      "header_acc": 0.5576923076923077,
+      "cell_recall": 0.4087912087912088,
+      "struct_rate": 0.7272727272727273
+    },
+    "lowres": {
+      "header_acc": 0.5,
+      "cell_recall": 0.42857142857142855,
+      "struct_rate": 0.6363636363636364
+    }
+  },
+  "formula": {
+    "char_recall": 0.2816326530612245,
+    "exact": 0,
+    "n": 10
+  },
+  "chart": {
+    "is_table": true,
+    "value_recall": 1.0,
+    "blocks": 12
+  }
+}

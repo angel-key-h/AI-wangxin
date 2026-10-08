@@ -1,0 +1,41 @@
+{
+  "summary": {
+    "semantic_noise_mild": {
+      "pages": 3,
+      "cer_before": 0.005785857816390005,
+      "cer_after": 0.0037393563594849376,
+      "rel_drop_pct": 35.37075264981105,
+      "changes": 17,
+      "hit": 16,
+      "miss": 1,
+      "traditional": 0,
+      "rejected": 0
+    },
+    "semantic_noise_moderate": {
+      "pages": 3,
+      "cer_before": 0.12157664882794238,
+      "cer_after": 0.10229196193429145,
+      "rel_drop_pct": 15.862163564767268,
+      "changes": 85,
+      "hit": 79,
+      "miss": 6,
+      "traditional": 0,
+      "rejected": 4
+    },
+    "semantic_noise_severe": {
+      "pages": 3,
+      "cer_before": 0.28907251337548767,
+      "cer_after": 0.2603901781060655,
+      "rel_drop_pct": 9.922193893324454,
+      "changes": 126,
+      "hit": 119,
+      "miss": 7,
+      "traditional": 0,
+      "rejected": 13
+    }
+  },
+  "traditional_ok": true,
+  "miss_rate": 0.06140350877192982,
+  "total_changes": 228,
+  "pages_with_improvement": 3
+}

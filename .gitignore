@@ -1,0 +1,43 @@
+# ── 密钥：绝不入库 ──
+# .env 里是真实的阿里云百炼 API key。保持 .env.example 作为模板即可。
+.env
+.env.local
+*.key
+
+# ── Python ──
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# ── 内置的第三方源码副本（17MB，运行期并不 import 它；streamlit 由 pip 安装）──
+streamlit-develop/
+
+# ── 派生数据：可由脚本重新生成，不入库 ──
+data/agent.sqlite
+data/agent.sqlite.meta.json
+data/vector_store/
+data/vector_store_ohr/
+data/chroma_db/
+data/ocr_preview/
+data/uploads/
+data/chinook.sqlite.bak_full
+data/_chinook_full_download.sqlite
+
+# ── 大规模数据集与基准临时产物（数百 MB）──
+# OHR-Bench 用 .workbuddy/download_ohr.py 下载；bench 数据由基准脚本临时生成
+data/ohr/
+data/bench/
+
+# ── 评测过程中生成的合成图片（可重跑生成，但报告 JSON 要保留）──
+data/eval/recog/
+data/eval/recog_exp/
+data/eval/doc_quality/
+
+# ── 杂项 ──
+*.tmp
+*.bak
+*.log
+.DS_Store
+Thumbs.db

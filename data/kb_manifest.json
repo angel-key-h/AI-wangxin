@@ -1,0 +1,17 @@
+{
+  "generated_by": "scripts/build_demo_kb.py",
+  "source": "OHR-Bench gt retrieval base",
+  "files": [
+    "finance_3M_2023Q2_10Q.pdf",
+    "law_ACCELERATEDTECHNOLOGIESHOLDINGCORP_04_24_2003-EX-10.13-JOINT_VENTURE_AGREEME.pdf",
+    "law_ADMA_BioManufacturing_LLC_-_Amendment_3_to_Manufacturing_Agreement_.docx",
+    "textbook__Graduate_Studies_in_Mathematics_034__Sigurdur_Helgason_-_Differential_.docx",
+    "manual_2021-Apple-Catalog.pptx",
+    "finance_JPMORGAN_2022_10K.xlsx",
+    "law_ArmstrongFlooringInc_20190107_8-K_EX-10.2_11471795_EX-10.2_Intellectual_Prop.xlsx",
+    "finance_JPMORGAN_2023Q2_10Q.csv",
+    "textbook__Graduate_Studies_in_Mathematics_070__Sean_Dineen_-_Probability_Theory_.md",
+    "news_05_01.txt",
+    "manual_8dfc21ec151fb9d3578fc32d5c4e5df9.pdf"
+  ]
+}

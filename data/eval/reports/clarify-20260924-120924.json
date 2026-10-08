@@ -1,0 +1,314 @@
+{
+  "tp": 7,
+  "fp": 0,
+  "fn": 0,
+  "tn": 10,
+  "precision": 1.0,
+  "recall": 1.0,
+  "f1": 1.0,
+  "fpr": 0.0,
+  "dimensions": {
+    "controlled": [
+      "时间范围",
+      "指标",
+      "指代对象",
+      "对比对象"
+    ],
+    "hit": 7,
+    "n": 7,
+    "rate": 1.0,
+    "false": 0,
+    "distribution": {
+      "时间范围": 2,
+      "指标": 2,
+      "指代对象": 2,
+      "对比对象": 1
+    }
+  },
+  "rule_only": {
+    "hit": 7,
+    "n": 7,
+    "rate": 1.0,
+    "distribution": {
+      "时间范围": 2,
+      "指标": 2,
+      "指代对象": 2,
+      "对比对象": 1
+    }
+  },
+  "cases": [
+    {
+      "id": "P1",
+      "q": "增长率是多少？",
+      "expect": "clarify",
+      "did": true,
+      "missing_dimensions": [
+        "时间范围"
+      ],
+      "by_rule": false,
+      "reason": "未指定计算增长率的时间范围",
+      "clarification": "请问您想查询哪个时间段的增长率？",
+      "rule_dims": [
+        "时间范围"
+      ],
+      "answer": "❓ 为了让答案准确，我需要先确认一点：\n\n**请问您想查询哪个时间段的增长率？**\n\n- 2023年第二季度同比\n- 2023年上半年同比\n- 最近两个季度环比\n\n> 判断依据：未指定计算增长率的时间范围",
+      "note": "缺时间范围，答出来必然是错的"
+    },
+    {
+      "id": "P2",
+      "q": "前十是谁？",
+      "expect": "clarify",
+      "did": true,
+      "missing_dimensions": [
+        "指标"
+      ],
+      "by_rule": false,
+      "reason": "未说明按哪个指标排名",
+      "clarification": "请问是按什么指标的前十？例如综测成绩、智育得分等。",
+      "rule_dims": [
+        "指标"
+      ],
+      "answer": "❓ 为了让答案准确，我需要先确认一点：\n\n**请问是按什么指标的前十？例如综测成绩、智育得分等。**\n\n- 综合素质测评成绩\n- 智育测评分\n- 德育测评分\n- 学术科技与创新创业实践分\n\n> 判断依据：未说明按哪个指标排名",
+      "note": "没说是按哪个指标排的前十"
+    },
+    {
+      "id": "P3",
+      "q": "那个班有多少人？",
+      "expect": "clarify",
+      "did": true,
+      "missing_dimensions": [
+        "指代对象"
+      ],
+      "by_rule": false,
+      "reason": "“那个班”指代不明，无上下文",
+      "clarification": "请问您指的是哪个行政班？",
+      "rule_dims": [
+        "指代对象"
+      ],
+      "answer": "❓ 为了让答案准确，我需要先确认一点：\n\n**请问您指的是哪个行政班？**\n\n\n\n> 判断依据：“那个班”指代不明，无上下文",
+      "note": "指代对象缺失，且本轮无历史对话"
+    },
+    {
+      "id": "P4",
+      "q": "帮我看看排名",
+      "expect": "clarify",
+      "did": true,
+      "missing_dimensions": [
+        "指标"
+      ],
+      "by_rule": false,
+      "reason": "未说明按哪个指标排名",
+      "clarification": "请问您想查看哪项指标的排名？",
+      "rule_dims": [
+        "指标"
+      ],
+      "answer": "❓ 为了让答案准确，我需要先确认一点：\n\n**请问您想查看哪项指标的排名？**\n\n- 综合素质测评成绩\n- 德育测评分\n- 智育测评分\n- 体育测评分\n\n> 判断依据：未说明按哪个指标排名",
+      "note": "缺指标、缺范围"
+    },
+    {
+      "id": "P5",
+      "q": "他的成绩怎么样？",
+      "expect": "clarify",
+      "did": true,
+      "missing_dimensions": [
+        "指代对象"
+      ],
+      "by_rule": false,
+      "reason": "“他”指代不明，无上下文",
+      "clarification": "请问您指的是哪位学生的成绩？",
+      "rule_dims": [
+        "指代对象"
+      ],
+      "answer": "❓ 为了让答案准确，我需要先确认一点：\n\n**请问您指的是哪位学生的成绩？**\n\n\n\n> 判断依据：“他”指代不明，无上下文",
+      "note": "无指代对象"
+    },
+    {
+      "id": "P6",
+      "q": "同比情况如何？",
+      "expect": "clarify",
+      "did": true,
+      "missing_dimensions": [
+        "时间范围"
+      ],
+      "by_rule": false,
+      "reason": "问同比但未指定时间范围",
+      "clarification": "请问您想了解哪个时间段的同比情况？",
+      "rule_dims": [
+        "时间范围"
+      ],
+      "answer": "❓ 为了让答案准确，我需要先确认一点：\n\n**请问您想了解哪个时间段的同比情况？**\n\n- 2023年第二季度\n- 2022年全年\n- 最近六个月\n\n> 判断依据：问同比但未指定时间范围",
+      "note": "缺时间范围（同比要求跨期对比却没给窗口）"
+    },
+    {
+      "id": "P7",
+      "q": "对比一下",
+      "expect": "clarify",
+      "did": true,
+      "missing_dimensions": [
+        "对比对象"
+      ],
+      "by_rule": false,
+      "reason": "未指明对比的两方",
+      "clarification": "请问您想对比哪两个对象？",
+      "rule_dims": [
+        "对比对象"
+      ],
+      "answer": "❓ 为了让答案准确，我需要先确认一点：\n\n**请问您想对比哪两个对象？**\n\n\n\n> 判断依据：未指明对比的两方",
+      "note": "没有对比对象"
+    },
+    {
+      "id": "N1",
+      "q": "智育测评分前十是谁？",
+      "expect": "answer",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [],
+      "answer": "**结论：智育测评分前十名的学生依次为胡子扬、杜佳玲、吴絮、王嘉伟、詹昭阳、曾欣妍、李佳怡、吴思宇、舒婉棋、谢俊。**\n\n**依据：**\n\n该排名直接来自 SQL 查询结果，查询语句按“智育测评分”降序排列并取前10名，结果如下表所示：\n\n| 排名 | 姓名     | 智育测评分 |\n|------|--------",
+      "note": "完备"
+    },
+    {
+      "id": "N2",
+      "q": "一共有多少人参评？",
+      "expect": "answer",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [],
+      "answer": "**结论：一共有 569 人参评。**\n\n**依据：**\n\n- SQL 查询结果直接统计了“综合素质测评情况”表中的记录总数，结果为 569。  \n  **来源：SQL 查询结果**\n\n- 文档中每位学生的记录均明确标注“参评人数: 569”，与 SQL 查询结果一致。  \n  **来源：【电子学院2025级电子工程类",
+      "note": "完备"
+    },
+    {
+      "id": "N3",
+      "q": "只育测评分前十是谁",
+      "expect": "answer",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [],
+      "answer": "**结论：智育测评分前十名学生如下表所示。**\n\n| 排名 | 姓名     | 智育测评分 |\n|------|----------|------------|\n| 1    | 胡子扬   | 90.7       |\n| 2    | 杜佳玲   | 90.06      |\n| 3    | 吴絮     | ",
+      "note": "错别字但意图明确（规则须容忍错字，否则会误报缺指标）"
+    },
+    {
+      "id": "N4",
+      "q": "胡子杨的智育测评分",
+      "expect": "answer",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [],
+      "answer": "结论：**问题中提到的“胡子杨”在资料中无对应记录，无法提供其智育测评分。**\n\n依据：  \n- 所有可用资料中仅存在名为“**胡子扬**”的学生，无“胡子杨”的记录。  \n- “胡子扬”的智育测评分为 **90.7**（来源：SQL 查询结果；资料 1 | 【电子学院2025级电子工程类综测素质测评结果】综合素质测评",
+      "note": "人名同音错别字"
+    },
+    {
+      "id": "N5",
+      "q": "公司有多少员工",
+      "expect": "answer",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [],
+      "answer": "结论：公司当前有 8 名员工。  \n来源：SQL 查询结果\n\n依据：  \n执行的 SQL 查询为：\n```sql\nSELECT COUNT(*) FROM \"Employee\";\n```\n查询结果返回：\n| COUNT(*) |\n|----------|\n| 8        |\n\n因此，根据数据库中的 Employe",
+      "note": "极短但完备"
+    },
+    {
+      "id": "N6",
+      "q": "北京的首都",
+      "expect": "answer",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [],
+      "answer": "信息不足。  \n资料中未提及北京或其首都相关信息。",
+      "note": "无关问题，应作答/声明无资料而非澄清"
+    },
+    {
+      "id": "N7",
+      "q": "每个行政班的平均综合素质测评成绩是多少？",
+      "expect": "answer",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [],
+      "answer": "**结论：**  \n各行政班的平均综合素质测评成绩如下表所示。\n\n**依据：**  \n来源：SQL 查询结果\n\n| 行政班   | 平均综合素质测评成绩 |\n|----------|------------------------|\n| 2112501  | 74.2471875             |\n| 211",
+      "note": "完备"
+    },
+    {
+      "id": "N8",
+      "q": "扣分最多的三个人是谁",
+      "expect": "answer",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [],
+      "answer": "**结论：根据现有数据，无法确定“扣分最多的三个人”，因为所有出现在查询结果和文档中的学生扣分均为 0 或 -1，且 SQL 查询返回的前三名扣分均为 0.0。**\n\n**依据如下：**\n\n1. **SQL 查询结果**显示扣分最高的（即数值最大的）前三名学生及其扣分如下：\n\n| 姓名   | 扣分 |\n|------",
+      "note": "有『扣分』列可依，不该反问"
+    },
+    {
+      "id": "N9",
+      "q": "学号 2025210785 的学生叫什么名字？",
+      "expect": "answer",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [],
+      "answer": "学号 2025210785 的学生姓名是林恺一。\n\n依据如下：\n\n- 来源：SQL 查询结果  \n  ```sql\n  SELECT \"姓名\" FROM \"综合素质测评情况\" WHERE \"学号\" = 2025210785;\n  ```\n  查询返回结果为：`{'姓名': '林恺一'}`\n\n- 来源：【电子学院2025",
+      "note": "完备"
+    },
+    {
+      "id": "N10",
+      "q": "哪个国家的客户最多？",
+      "expect": "answer",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [],
+      "answer": "**结论：客户最多的国家是 Czech Republic（捷克共和国）。**\n\n**依据：**  \n来源：SQL 查询结果\n\n该结论基于以下 SQL 查询：\n\n```sql\nSELECT \"Country\"\nFROM \"Customer\"\nGROUP BY \"Country\"\nORDER BY COUNT(*) DES",
+      "note": "完备（极值词自带依据：客户）"
+    }
+  ],
+  "closure": [
+    {
+      "id": "C1",
+      "first": "前十是谁？",
+      "reply": "按智育测评分",
+      "asked_first": true,
+      "dims": [
+        "指标"
+      ],
+      "ok": true,
+      "answer": "**结论：智育测评分前十名的学生如下表所示。**  \n来源：SQL 查询结果\n\n| 排名 | 姓名   | 智育测评分 |\n|------|--------|------------|\n| 1    | 胡子扬 | 90.7       |\n| 2    | 杜佳玲 | 90.06      |\n| 3    | 吴絮   | 89.81      |\n| 4    | 王嘉伟 | 89.52  "
+    },
+    {
+      "id": "C2",
+      "first": "那个班有多少人？",
+      "reply": "2112503 班",
+      "asked_first": true,
+      "dims": [
+        "指代对象"
+      ],
+      "ok": true,
+      "answer": "2112503 班有 31 人。\n\n**依据：**\n\n- 来源：SQL 查询结果  \n  执行查询：  \n  ```sql\n  SELECT COUNT(*) FROM \"综合素质测评情况\" WHERE \"行政班\" = 2112503;\n  ```  \n  返回结果：  \n  | COUNT(*) |\n  |----------|\n  | 31       |"
+    }
+  ]
+}

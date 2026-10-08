@@ -1,0 +1,48 @@
+{
+  "engine": "vlm",
+  "table": {
+    "clean": {
+      "header_acc": 0.559322033898305,
+      "cell_recall": 0.8108882521489972,
+      "struct_rate": 0.9166666666666666,
+      "errors": 0,
+      "n": 12
+    },
+    "skew2": {
+      "header_acc": 0.559322033898305,
+      "cell_recall": 0.8166189111747851,
+      "struct_rate": 1.0,
+      "errors": 0,
+      "n": 12
+    },
+    "blur": {
+      "header_acc": 0.559322033898305,
+      "cell_recall": 0.8166189111747851,
+      "struct_rate": 1.0,
+      "errors": 0,
+      "n": 12
+    },
+    "lowres": {
+      "header_acc": 0.559322033898305,
+      "cell_recall": 0.7363896848137536,
+      "struct_rate": 1.0,
+      "errors": 0,
+      "n": 12
+    }
+  },
+  "formula": {
+    "char_recall": 0.9673469387755103,
+    "exact": 2,
+    "n": 10
+  },
+  "chart": {
+    "is_table": false,
+    "value_recall": 1.0,
+    "blocks": 0,
+    "mapping_verified": true,
+    "mapping_hit": 5,
+    "mapping_total": 5,
+    "chart_type": "bar",
+    "raw": "{\"chart_type\": \"bar\", \"categories\": [\"Table\", \"Chart\", \"Formula\", \"Hand-written\", \"Text\"], \"values\": [2273, 919, 2143, 349, 3272], \"title\": \"OHR-Bench evidence type distribution\", \"x_label\": \"Evidence Type\", \"y_label\": \"count\"}"
+  }
+}

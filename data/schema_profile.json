@@ -1,0 +1,319 @@
+{
+  "_fingerprint": "c1d764b51401a5f56a56c2b36cdd8a8aee4538b5",
+  "tables": {
+    "Album": {
+      "zh": "音乐专辑表",
+      "aliases": [
+        "专辑",
+        "唱片",
+        "音乐专辑",
+        "专辑信息",
+        "专辑列表",
+        "大碟"
+      ],
+      "columns_zh": {
+        "AlbumId": "专辑编号",
+        "Title": "专辑名称",
+        "ArtistId": "歌手编号"
+      }
+    },
+    "Artist": {
+      "zh": "歌手艺人表",
+      "aliases": [
+        "歌手",
+        "艺人",
+        "音乐人",
+        "演唱者",
+        "艺术家",
+        "乐队"
+      ],
+      "columns_zh": {
+        "ArtistId": "歌手编号",
+        "Name": "歌手姓名"
+      }
+    },
+    "Customer": {
+      "zh": "客户信息表",
+      "aliases": [
+        "客户",
+        "顾客",
+        "买家",
+        "用户",
+        "会员",
+        "客户资料"
+      ],
+      "columns_zh": {
+        "CustomerId": "客户编号",
+        "FirstName": "名",
+        "LastName": "姓",
+        "Company": "公司名称",
+        "Address": "联系地址",
+        "City": "所在城市",
+        "State": "所在省份",
+        "Country": "所在国家",
+        "PostalCode": "邮政编码",
+        "Phone": "联系电话",
+        "Fax": "传真号码",
+        "Email": "电子邮箱",
+        "SupportRepId": "客服专员编号"
+      }
+    },
+    "Employee": {
+      "zh": "员工信息表",
+      "aliases": [
+        "员工",
+        "雇员",
+        "职工",
+        "工作人员",
+        "客服人员",
+        "员工档案"
+      ],
+      "columns_zh": {
+        "EmployeeId": "员工编号",
+        "LastName": "姓",
+        "FirstName": "名",
+        "Title": "职位头衔",
+        "ReportsTo": "直属上级",
+        "BirthDate": "出生日期",
+        "HireDate": "入职日期",
+        "Address": "联系地址",
+        "City": "所在城市",
+        "State": "所在省份",
+        "Country": "所在国家",
+        "PostalCode": "邮政编码",
+        "Phone": "联系电话",
+        "Fax": "传真号码",
+        "Email": "电子邮箱"
+      }
+    },
+    "Genre": {
+      "zh": "音乐流派表",
+      "aliases": [
+        "流派",
+        "曲风",
+        "音乐类型",
+        "风格",
+        "音乐流派",
+        "歌曲类型"
+      ],
+      "columns_zh": {
+        "GenreId": "流派编号",
+        "Name": "流派名称"
+      }
+    },
+    "Invoice": {
+      "zh": "发票订单表",
+      "aliases": [
+        "发票",
+        "订单",
+        "账单",
+        "消费记录",
+        "购买记录",
+        "销售单据"
+      ],
+      "columns_zh": {
+        "InvoiceId": "发票编号",
+        "CustomerId": "客户编号",
+        "InvoiceDate": "开票日期",
+        "BillingAddress": "账单地址",
+        "BillingCity": "账单城市",
+        "BillingState": "账单省份",
+        "BillingCountry": "账单国家",
+        "BillingPostalCode": "账单邮编",
+        "Total": "订单总金额"
+      }
+    },
+    "InvoiceLine": {
+      "zh": "发票明细表",
+      "aliases": [
+        "发票明细",
+        "订单明细",
+        "消费明细",
+        "购买明细",
+        "账单条目",
+        "销售明细"
+      ],
+      "columns_zh": {
+        "InvoiceLineId": "明细编号",
+        "InvoiceId": "发票编号",
+        "TrackId": "歌曲编号",
+        "UnitPrice": "单价",
+        "Quantity": "购买数量"
+      }
+    },
+    "MediaType": {
+      "zh": "媒体类型表",
+      "aliases": [
+        "媒体类型",
+        "文件格式",
+        "音频格式",
+        "载体类型",
+        "存储格式",
+        "音乐格式"
+      ],
+      "columns_zh": {
+        "MediaTypeId": "媒体类型编号",
+        "Name": "媒体类型名称"
+      }
+    },
+    "Playlist": {
+      "zh": "播放列表表",
+      "aliases": [
+        "播放列表",
+        "歌单",
+        "播放清单",
+        "曲目列表",
+        "音乐列表",
+        "歌单信息"
+      ],
+      "columns_zh": {
+        "PlaylistId": "歌单编号",
+        "Name": "歌单名称"
+      }
+    },
+    "PlaylistTrack": {
+      "zh": "歌单歌曲关联表",
+      "aliases": [
+        "歌单歌曲",
+        "歌单曲目",
+        "播放列表歌曲",
+        "歌单明细",
+        "歌单内容",
+        "曲目关联"
+      ],
+      "columns_zh": {
+        "PlaylistId": "歌单编号",
+        "TrackId": "歌曲编号"
+      }
+    },
+    "Track": {
+      "zh": "歌曲曲目表",
+      "aliases": [
+        "歌曲",
+        "曲目",
+        "单曲",
+        "音乐",
+        "音轨",
+        "歌曲信息"
+      ],
+      "columns_zh": {
+        "TrackId": "歌曲编号",
+        "Name": "歌曲名称",
+        "AlbumId": "专辑编号",
+        "MediaTypeId": "媒体类型编号",
+        "GenreId": "流派编号",
+        "Composer": "作曲人",
+        "Milliseconds": "时长毫秒",
+        "Bytes": "文件大小",
+        "UnitPrice": "单价"
+      }
+    },
+    "综合素质测评情况": {
+      "zh": "综合素质测评表",
+      "aliases": [
+        "综合素质测评",
+        "综测",
+        "综测成绩",
+        "素质测评",
+        "学生测评",
+        "综合测评情况"
+      ],
+      "columns_zh": {
+        "学号": "学生学号",
+        "姓名": "学生姓名",
+        "学院": "所属学院",
+        "年级": "所在年级",
+        "专业": "所学专业",
+        "行政班": "行政班级",
+        "参评人数": "参与测评人数",
+        "综合素质测评成绩": "综测总成绩",
+        "综合素质测评成绩排名": "综测总排名",
+        "德育测评分": "德育得分",
+        "德育测评分排名": "德育得分排名",
+        "智育测评分": "智育得分",
+        "智育测评分排名": "智育得分排名",
+        "体育测评分": "体育得分",
+        "体育测评分排名": "体育得分排名",
+        "美育测评分": "美育得分",
+        "美育测评分排名": "美育得分排名",
+        "劳动教育测评分": "劳动教育得分",
+        "劳动教育测评分排名": "劳动教育得分排名",
+        "学术科技与创新创业实践分": "科创实践得分",
+        "学术科技与创新创业实践分排名": "科创实践得分排名",
+        "扣分": "扣分分值",
+        "扣分排名": "扣分排名"
+      }
+    },
+    "finance_JPMORGAN_2022_10K_page0": {
+      "zh": "摩根大通2022年10-K注册证券表",
+      "aliases": [
+        "摩根大通2022年报证券注册表",
+        "JPM 2022 10-K 证券列表",
+        "摩根大通2022年10-K上市证券",
+        "JPMorgan 2022 10K 注册证券",
+        "摩根大通2022年报证券信息"
+      ],
+      "columns_zh": {
+        "Title of each class": "证券类别名称",
+        "Trading Symbol(s)": "交易代码",
+        "Name of each exchange on which registered": "注册交易所"
+      }
+    },
+    "finance_JPMORGAN_2022_10K_page3": {
+      "zh": "摩根大通2022年10-K员工区域分布",
+      "aliases": [
+        "摩根大通2022年报员工区域分布",
+        "JPM 2022 10-K 员工地区分布",
+        "摩根大通2022年10-K员工人数按地区",
+        "JPMorgan 2022 10K 员工区域",
+        "摩根大通2022年报员工地域分布"
+      ],
+      "columns_zh": {
+        "Employee Breakdown by Region": "员工区域分布",
+        "列2": "员工人数"
+      }
+    },
+    "finance_JPMORGAN_2023Q2_10Q": {
+      "zh": "摩根大通2023年二季度10-Q财务数据",
+      "aliases": [
+        "摩根大通2023Q2季报财务数据",
+        "JPM 2023Q2 10-Q 财务指标",
+        "摩根大通2023年第二季度10-Q数据",
+        "JPMorgan 2023Q2 10Q 财务摘要",
+        "摩根大通2023Q2季报关键数据"
+      ],
+      "columns_zh": {
+        "\\multirow[t]{2}{*}{As of or for the period ended, (in millions, except per share, ratio, headcount data and where otherwise noted)}": "报告期截止日/期间",
+        "\\multirow[b]{2}{*}{2Q23}": "2023年第二季度",
+        "Unnamed: 2": "2023年第二季度同比变化",
+        "\\multirow[b]{2}{*}{1Q23}": "2023年第一季度",
+        "\\multirow[b]{2}{*}{4Q22}": "2022年第四季度",
+        "\\multirow[b]{2}{*}{3Q22}": "2022年第三季度",
+        "\\multirow[b]{2}{*}{2Q22}": "2022年第二季度",
+        "Six months ended June 30,": "截至6月30日的六个月",
+        "Unnamed: 8": "2023年上半年",
+        "Unnamed: 9": "2022年上半年",
+        "Unnamed: 10": "2023年上半年同比变化",
+        "Unnamed: 11": "2023年第二季度环比变化",
+        "Unnamed: 12": "2023年第二季度同比变化",
+        "Unnamed: 13": "2023年上半年环比变化",
+        "Unnamed: 14": "2023年上半年同比变化",
+        "Unnamed: 15": "其他财务指标"
+      }
+    },
+    "law_ArmstrongFlooringInc_20190107_8K_EX1": {
+      "zh": "阿姆斯特朗地板公司2019年8-K附件",
+      "aliases": [
+        "Armstrong Flooring 2019年8-K附件",
+        "阿姆斯特朗地板2019年1月8-K文件",
+        "Armstrong Flooring 8-K 2019 附件",
+        "阿姆斯特朗地板公司8-K附件",
+        "AFI 2019 8-K 附件"
+      ],
+      "columns_zh": {
+        "说明": "说明",
+        "内容": "内容"
+      }
+    }
+  }
+}

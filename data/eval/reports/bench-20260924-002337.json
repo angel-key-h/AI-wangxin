@@ -1,0 +1,142 @@
+{
+  "sql": [
+    {
+      "scale": 1000,
+      "schema_chars": 6797,
+      "schema_ms": 3.2146000012289733,
+      "queries": [
+        {
+          "label": "点查（按姓名，无索引则全表扫）",
+          "sql": "SELECT 综合素质测评成绩 FROM 综合素质测评情况 WHERE 姓名='胡子扬'",
+          "ms": 0.22679999892716296,
+          "best_ms": 0.18960000306833535,
+          "plan": "SCAN 综合素质测评情况"
+        },
+        {
+          "label": "全表计数",
+          "sql": "SELECT COUNT(*) FROM 综合素质测评情况",
+          "ms": 0.14630000077886507,
+          "best_ms": 0.14259999807109125,
+          "plan": "SCAN 综合素质测评情况"
+        },
+        {
+          "label": "排序取前 10（无法走索引）",
+          "sql": "SELECT 姓名 FROM 综合素质测评情况 ORDER BY 智育测评分 DESC LIMIT 10",
+          "ms": 0.22959999841987155,
+          "best_ms": 0.21349999951780774,
+          "plan": "SCAN 综合素质测评情况 | USE TEMP B-TREE FOR ORDER BY"
+        },
+        {
+          "label": "分组聚合",
+          "sql": "SELECT 行政班, AVG(综合素质测评成绩) FROM 综合素质测评情况 GROUP BY 行政班",
+          "ms": 0.3478999969956931,
+          "best_ms": 0.3122000016446691,
+          "plan": "SCAN 综合素质测评情况 | USE TEMP B-TREE FOR GROUP BY"
+        }
+      ],
+      "sql_gen_ms": null,
+      "indexed": [
+        {
+          "label": "点查（按姓名，无索引则全表扫）",
+          "ms": 0.15130000247154385
+        },
+        {
+          "label": "排序取前 10（无法走索引）",
+          "ms": 0.17389999993611127
+        }
+      ]
+    },
+    {
+      "scale": 10000,
+      "schema_chars": 6797,
+      "schema_ms": 3.2921999991231132,
+      "queries": [
+        {
+          "label": "点查（按姓名，无索引则全表扫）",
+          "sql": "SELECT 综合素质测评成绩 FROM 综合素质测评情况 WHERE 姓名='胡子扬'",
+          "ms": 0.492600000143284,
+          "best_ms": 0.46930000098655,
+          "plan": "SCAN 综合素质测评情况"
+        },
+        {
+          "label": "全表计数",
+          "sql": "SELECT COUNT(*) FROM 综合素质测评情况",
+          "ms": 0.14930000179447234,
+          "best_ms": 0.14260000170907006,
+          "plan": "SCAN 综合素质测评情况"
+        },
+        {
+          "label": "排序取前 10（无法走索引）",
+          "sql": "SELECT 姓名 FROM 综合素质测评情况 ORDER BY 智育测评分 DESC LIMIT 10",
+          "ms": 0.7046000027912669,
+          "best_ms": 0.6839000016043428,
+          "plan": "SCAN 综合素质测评情况 | USE TEMP B-TREE FOR ORDER BY"
+        },
+        {
+          "label": "分组聚合",
+          "sql": "SELECT 行政班, AVG(综合素质测评成绩) FROM 综合素质测评情况 GROUP BY 行政班",
+          "ms": 1.9543999987945426,
+          "best_ms": 1.752100000885548,
+          "plan": "SCAN 综合素质测评情况 | USE TEMP B-TREE FOR GROUP BY"
+        }
+      ],
+      "sql_gen_ms": null,
+      "indexed": [
+        {
+          "label": "点查（按姓名，无索引则全表扫）",
+          "ms": 0.1781999999366235
+        },
+        {
+          "label": "排序取前 10（无法走索引）",
+          "ms": 0.18179999824496917
+        }
+      ]
+    },
+    {
+      "scale": 100000,
+      "schema_chars": 6797,
+      "schema_ms": 3.224600000976352,
+      "queries": [
+        {
+          "label": "点查（按姓名，无索引则全表扫）",
+          "sql": "SELECT 综合素质测评成绩 FROM 综合素质测评情况 WHERE 姓名='胡子扬'",
+          "ms": 9.867999997368315,
+          "best_ms": 9.627799998270348,
+          "plan": "SCAN 综合素质测评情况"
+        },
+        {
+          "label": "全表计数",
+          "sql": "SELECT COUNT(*) FROM 综合素质测评情况",
+          "ms": 6.535100001201499,
+          "best_ms": 6.29069999922649,
+          "plan": "SCAN 综合素质测评情况"
+        },
+        {
+          "label": "排序取前 10（无法走索引）",
+          "sql": "SELECT 姓名 FROM 综合素质测评情况 ORDER BY 智育测评分 DESC LIMIT 10",
+          "ms": 11.565200002223719,
+          "best_ms": 11.539900002389913,
+          "plan": "SCAN 综合素质测评情况 | USE TEMP B-TREE FOR ORDER BY"
+        },
+        {
+          "label": "分组聚合",
+          "sql": "SELECT 行政班, AVG(综合素质测评成绩) FROM 综合素质测评情况 GROUP BY 行政班",
+          "ms": 32.664300000760704,
+          "best_ms": 32.114699999510776,
+          "plan": "SCAN 综合素质测评情况 | USE TEMP B-TREE FOR GROUP BY"
+        }
+      ],
+      "sql_gen_ms": null,
+      "indexed": [
+        {
+          "label": "点查（按姓名，无索引则全表扫）",
+          "ms": 0.17329999900539406
+        },
+        {
+          "label": "排序取前 10（无法走索引）",
+          "ms": 0.1827000014600344
+        }
+      ]
+    }
+  ]
+}
