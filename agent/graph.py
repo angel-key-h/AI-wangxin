@@ -111,6 +111,14 @@ def _parse_json(raw: str) -> dict:
 
 class AgentGraph:
     def __init__(self):
+        # 先给出「缺哪一个环境变量」的明确报错。直接构造 ChatOpenAI 时，
+        # api_key 为空只会抛一句带 "api_key" 字样的校验异常，看不出该去配哪一项；
+        # 调用方（页面 / 脚本）捕获后可以原样展示这条可操作的提示。
+        missing = Config.missing_keys()
+        if missing:
+            raise RuntimeError(
+                "缺少必要的 API Key：" + "、".join(missing)
+                + "。请在项目根目录 .env 中配置（模板见 .env.example）")
         self.llm = ChatOpenAI(
             model=Config.LLM_MODEL,
             api_key=Config.LLM_API_KEY,

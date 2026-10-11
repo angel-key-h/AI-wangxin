@@ -62,9 +62,30 @@ def get_agent():
     # 用模块属性而不是 import 进来的名字，否则热重载后还是旧类
     return sys.modules["agent.graph"].AgentGraph()
 
-with st.spinner("正在初始化智能体，加载文档索引..."):
-    agent = get_agent()
-st.success("✅ 智能体就绪")
+# 启动自检：缺 Key 时**不能**整页 traceback —— 页面必须自己说清缺了哪个 Key。
+# 两层保护：
+#   ① 先做不耗时的静态自检（Config.missing_keys），报出精确的变量名；
+#   ② 再用 try 兜住其余初始化失败（依赖缺失、库损坏、网络不通）。
+# 两种情况都渲染成可读提示，而不是把用户丢给一段堆栈。
+agent = None
+_missing_keys = Config.missing_keys()
+if _missing_keys:
+    st.error(
+        "❌ 缺少必要的 API Key：" + "、".join(f"`{k}`" for k in _missing_keys)
+        + "\n\n请在项目根目录创建 `.env` 并补齐上述变量（模板见 `.env.example`），"
+          "然后重启应用。\n\n（页面其余部分可正常浏览，但提问功能不可用。）"
+    )
+else:
+    try:
+        with st.spinner("正在初始化智能体，加载文档索引..."):
+            agent = get_agent()
+        st.success("✅ 智能体就绪")
+    except Exception as e:
+        st.error(
+            f"❌ 智能体初始化失败：`{type(e).__name__}: {e}`\n\n"
+            "常见原因：API Key 无效或额度不足、网络不通、依赖未装全"
+            "（可先执行 `pip install -r requirements.txt`）。"
+        )
 
 # ========== 图片导入（OCR） ==========
 UPLOAD_DIR = os.path.join(Config.BASE_DIR, "data", "uploads")
@@ -280,6 +301,8 @@ with st.sidebar:
 
     st.markdown("### 数据库信息")
     try:
+        if agent is None:
+            raise RuntimeError("智能体未就绪（缺少 API Key）")
         schema = agent.sql_tool.get_schema()
         with st.expander(f"📊 Schema（{len(schema)} 字符）", expanded=False):
             st.code(schema, language="sql")
@@ -301,6 +324,8 @@ with st.sidebar:
     # RAG 索引状态：降级时必须显式告知，否则用户会把「检索不可用」误当成「资料里没有」，
     # 进而误信一个只看 SQL 的答案
     try:
+        if agent is None:
+            raise RuntimeError("智能体未就绪（缺少 API Key）")
         _rag = agent.rag
         if getattr(_rag, "degraded_reason", ""):
             st.warning("⚠️ 文档检索已降级：向量索引不可用\n\n"
@@ -498,6 +523,12 @@ question = typed or pending_q
 
 if question:
     st.chat_message("user").markdown(question)
+
+    # 智能体没起来（缺 Key / 初始化失败）时给出明确指引，而不是让 agent.run 抛异常
+    if agent is None:
+        st.error("智能体未就绪：请在项目根目录 `.env` 中配置所需的 API Key，"
+                 "然后重启应用后再提问。")
+        st.stop()
 
     # 对话历史必须在 append 当前提问**之前**取：
     # 若先 append，当前问题会同时出现在 history 与 question 里，
