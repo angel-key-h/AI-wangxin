@@ -30,8 +30,9 @@ import zipfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
-WS = r"D:\硬件数据\deepseek-harness-project\中电子云"
-OHR = os.path.join(WS, "data", "ohr")
+# OHR-Bench 数据默认放在仓库内 data/ohr/；可用环境变量 OHR_DIR 覆盖。
+# （此前写死作者本机 D 盘绝对路径，换机必崩）
+OHR = os.environ.get("OHR_DIR") or os.path.join(ROOT, "data", "ohr")
 ZIP = os.path.join(OHR, "retrieval.zip")
 PARQUET = os.path.join(OHR, "OHR-Bench.parquet")
 

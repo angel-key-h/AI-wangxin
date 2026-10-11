@@ -26,8 +26,10 @@ import zipfile
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
-WS = r"D:\硬件数据\deepseek-harness-project\中电子云"
-OHR = os.path.join(WS, "data", "ohr")
+# OHR-Bench 数据默认放在仓库内 data/ohr/（由 .workbuddy/download_ohr.py 下载）。
+# 如需放在别处，用环境变量 OHR_DIR 指定 —— 此前这里写死作者本机 D 盘绝对路径，
+# 换一台机器必然找不到文件，README 里「python scripts/build_demo_kb.py」也就跑不通。
+OHR = os.environ.get("OHR_DIR") or os.path.join(ROOT, "data", "ohr")
 ZIP = os.path.join(OHR, "retrieval.zip")
 KB = os.path.join(ROOT, "rag_data")
 # 清单**不能放在 rag_data 里**：即使有 db_builder 的下划线过滤兜底，

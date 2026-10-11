@@ -34,7 +34,9 @@ from config import Config  # noqa: E402
 
 BENCH_DIR = os.path.join(ROOT, "data", "bench")
 REPORT_DIR = os.path.join(ROOT, "data", "eval", "reports")
-OHR = r"D:\硬件数据\deepseek-harness-project\中电子云\data\ohr"
+# OHR-Bench 数据默认在仓库内 data/ohr/，可用环境变量 OHR_DIR 覆盖
+# （此前写死作者本机 D 盘路径，换机必崩）
+OHR = os.environ.get("OHR_DIR") or os.path.join(ROOT, "data", "ohr")
 
 SQL_SCALES = [1000, 10000, 100000]
 RAG_SCALES = [200, 1000, 4000]

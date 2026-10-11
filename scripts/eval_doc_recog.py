@@ -37,12 +37,43 @@ os.chdir(ROOT)
 from tools import image_tool  # noqa: E402
 from tools.rag_tool import latex_tables_to_markdown  # noqa: E402
 
-WS = r"D:\硬件数据\deepseek-harness-project\中电子云"
-OHR = os.path.join(WS, "data", "ohr")
+# OHR-Bench 数据默认放在仓库内 data/ohr/；可用环境变量 OHR_DIR 覆盖。
+# （此前写死作者本机 D 盘绝对路径，换机必崩）
+OHR = os.environ.get("OHR_DIR") or os.path.join(ROOT, "data", "ohr")
 OUT = os.path.join(ROOT, "data", "eval", "recog")
 REPORT_DIR = os.path.join(ROOT, "data", "eval", "reports")
-FONT = r"C:\Windows\Fonts\msyh.ttc"
 SEED = 20260925
+
+
+def _find_font():
+    """挑一个可用的中文字体：优先环境变量 EVAL_FONT，其次各系统常见位置。
+
+    此前写死 C:\\Windows\\Fonts\\msyh.ttc —— 在 Linux/macOS 上直接抛异常，
+    本脚本的表格/公式渲染会整段崩掉。
+    """
+    cands = [os.environ.get("EVAL_FONT"), r"C:\Windows\Fonts\msyh.ttc",
+             r"C:\Windows\Fonts\simhei.ttf",
+             "/System/Library/Fonts/PingFang.ttc",
+             "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
+             "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"]
+    for p in cands:
+        if p and os.path.exists(p):
+            return p
+    return None
+
+
+FONT = _find_font()
+
+
+def _load_font(size):
+    """按字号取字体；找不到字体或加载失败时退回 PIL 默认字体，保证不崩。"""
+    from PIL import ImageFont
+    if FONT:
+        try:
+            return ImageFont.truetype(FONT, size)
+        except Exception:
+            pass
+    return ImageFont.load_default()
 
 TABULAR = re.compile(r"\\begin\{tabular\}\{[^}]*\}(.*?)\\end\{tabular\}", re.S)
 _ROW_NOISE = re.compile(r"\\(hline|toprule|midrule|bottomrule|endhead|endfirsthead)\b")
@@ -110,8 +141,8 @@ def parse_tabular(text):
 
 
 def render_table(rows, path, font_size=17, max_cols=7, skew=0, blur=0.0, scale=1.0):
-    from PIL import Image, ImageDraw, ImageFont, ImageFilter
-    font = ImageFont.truetype(FONT, font_size)
+    from PIL import Image, ImageDraw, ImageFilter
+    font = _load_font(font_size)
     rows = [r[:max_cols] for r in rows[:14]]
     ncol = max(len(r) for r in rows)
     rows = [r + [""] * (ncol - len(r)) for r in rows]
@@ -259,8 +290,8 @@ def part_a(n_tables=12):
 
 # ---------------- B. 公式识别 ----------------
 def render_text(text, path, font_size=22, width=1000):
-    from PIL import Image, ImageDraw, ImageFont
-    font = ImageFont.truetype(FONT, font_size)
+    from PIL import Image, ImageDraw
+    font = _load_font(font_size)
     lines, cur = [], ""
     for ch in text:
         if font.getlength(cur + ch) > width - 60:
