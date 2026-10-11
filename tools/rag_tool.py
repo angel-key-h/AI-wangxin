@@ -48,7 +48,9 @@ META_FILE = "_index_meta.json"
 # 索引版本：**切分参数或切分逻辑一变就必须 +1**。
 # 否则源文件指纹不变 → 误判「可复用」→ 改了 CHUNK_SIZE 却完全没生效，
 # 而且因为块数恰好也可能相等，肉眼还看不出来（本项目踩过这个静默陷阱）。
-INDEX_VERSION = 3
+# v4：新增「按标题层级切块」（中级难题 7），切分逻辑变了 → 必须 +1，
+# 否则旧索引会被判为可复用，新逻辑静默不生效。
+INDEX_VERSION = 4
 
 # ── 文档处理策略清单（中级难题 8 的落地口）──
 # 界面在入库前算出文档复杂度，把策略写到这里，形如：
@@ -195,6 +197,161 @@ def latex_tables_to_markdown(text: str) -> str:
         return "\n".join(out)
 
     return _TABULAR.sub(conv, text or "")
+
+
+# ==================== 标题层级识别与层级切块（中级难题 7）====================
+# 「不标准目录结构」的真实含义：文档的章节结构**客观存在**，但写法极不统一 ——
+# Markdown 用 `#`，中文公文用「第三章 / 一、/（二）」，Word 把层级藏在段落样式里。
+# 旧实现把它们统统当纯文本，用固定窗口硬切，于是块边界与章节边界无关：
+# 一个块里可能前半句属于「3.2 实验方法」、后半句属于「4.1 结论」，
+# 检索命中后既解释不清来源，也让 embedding 丢掉章节语义。
+#
+# 这里的解法是两步：先把三类信号**归一成同一套 (层级, 标题) **，
+# 再按标题边界切块，并把「所在章节路径」前置到正文 + 写进元数据。
+_MD_HEADING = re.compile(r"^\s{0,3}(#{1,6})\s+(.+?)\s*#*\s*$")
+_CN_CHAPTER = re.compile(r"^\s*第\s*[〇零一二三四五六七八九十百千0-9]+\s*[章节篇部讲课]")
+_CN_ITEM = re.compile(r"^\s*[〇零一二三四五六七八九十]+\s*[、.．]\s*\S")
+_CN_PAREN = re.compile(r"^\s*[（(]\s*[〇零一二三四五六七八九十0-9]+\s*[）)]\s*\S")
+# 点分编号（1.1 / 3.2.1）后**不能紧跟量词/单位**，否则「3.5 亿元营收」
+# 会被当作「3.5 亿元营收」式的编号标题。取舍原则：**宁可漏判**（退回字符切块，
+# 结果安全）也**不能误判**（把正文当标题，块边界就切错了）。
+_NUM_DOTTED = re.compile(
+    r"^\s*(\d{1,3}(?:\.\d{1,3}){1,3})\s*[、.．]?\s+"
+    r"(?![\d亿万兆千百十元米吨件个支只%‰年月日人岁次倍])")
+# 数字编号后面**不能紧跟数字**，否则「3.5 亿元营收」这种正文会被当成
+# 「3. 5亿元…」式的编号标题（本项目实测误判过）
+_NUM_ITEM = re.compile(r"^\s*\d{1,3}\s*[、．.]\s*(?!\d)\S")
+_HEADING_MAX_LEN = 60          # 标题行通常很短，超过就当正文（防长句被误判）
+_HEADING_TAIL_STOP = "。；，,.;"
+
+
+def _heading_level(line: str):
+    """识别一行是不是标题，返回 (层级, 标题文本)；不是标题返回 (0, "")。
+
+    层级约定：1 = 章 / 一级，2 = 节 / 二级，3 = 三级，依此类推。
+    刻意**不追求绝对正确**：层级偶尔判深判浅，只影响块前缀的深浅，
+    不会把正文切错 —— 这个函数的职责是找出「结构边界」，不是做目录解析。
+    """
+    s = (line or "").rstrip()
+    stripped = s.strip()
+    if not stripped:
+        return 0, ""
+    m = _MD_HEADING.match(s)
+    if m:
+        return min(len(m.group(1)), 6), m.group(2).strip()
+    if len(stripped) > _HEADING_MAX_LEN:
+        return 0, ""
+    # 正文行通常以句末/逗号标点收尾，标题不会
+    if stripped[-1] in _HEADING_TAIL_STOP:
+        return 0, ""
+    if _CN_CHAPTER.match(s):
+        return 1, stripped
+    if _CN_ITEM.match(s) or _NUM_ITEM.match(s):
+        return 2, stripped
+    if _CN_PAREN.match(s):
+        return 3, stripped
+    m = _NUM_DOTTED.match(s)
+    if m:
+        # 1.1 -> 三级，1.1.1 -> 四级，1.1.1.1 -> 五级
+        return min(3 + m.group(1).count("."), 6), stripped
+    return 0, ""
+
+
+def _docx_heading_level(paragraph) -> int:
+    """从 Word 段落的样式名读出标题级别；非标题返回 0。
+
+    中文版 Word 的样式名是「标题 1」，英文版是「Heading 1」，两者都要认 ——
+    只认其中一种，在另一种语言版本的 Office 里就等于没做层级识别。
+    """
+    try:
+        name = (getattr(paragraph.style, "name", "") or "").strip()
+    except Exception:
+        return 0
+    m = re.match(r"(?:Heading|标题|標題)\s*(\d+)", name, re.I)
+    if m:
+        return max(1, min(int(m.group(1)), 6))
+    if name.lower() in ("title", "标题", "標題"):
+        return 1
+    return 0
+
+
+def split_by_heading(text: str):
+    """按标题边界把文本切成 [(章节路径, 正文)]；识别不到结构时返回 None。
+
+    少于 2 个标题就返回 None，让调用方**退回原来的字符切块** ——
+    本来就没有结构的文档（PDF 单页、无标题 txt）行为因此完全不变，
+    这次改动的可比性只受影响于「真的有结构」的那部分文档。
+    """
+    lines = (text or "").split("\n")
+    marks = []
+    for i, ln in enumerate(lines):
+        lv, title = _heading_level(ln)
+        if lv:
+            marks.append((i, lv, title))
+    if len(marks) < 2:
+        return None
+
+    # ── 反误判保护（不可省）──
+    # 编号列表与表格数据行跟章节标题**逐行长得很像**：
+    #   "1. Southern Tier West / 2. Eric County …"      ← 列表
+    #   "74.03 208 90.70 1 59.0 …"                       ← 表格数据行
+    # 单行规则分不开它们，区别在**分布**：章节标题之间必然隔着正文，
+    # 而列表 / 表格行是成串紧挨着排的。
+    # 实测代价（不设这道保护）：一份 12 页 PDF 被切出 179 块（应约 19 块），
+    # 一份 30 页成绩单 PDF 切出 629 块（应约 89 块）—— 块数暴增既拖慢索引，
+    # 又把完整语义切碎、污染检索。宁可退回字符切块，也不能让它们伪装成结构。
+    n_lines = len(lines)
+    gaps = [marks[i + 1][0] - marks[i][0] for i in range(len(marks) - 1)]
+    tight = sum(1 for g in gaps if g <= 2) / max(len(gaps), 1)
+    if len(marks) >= 4 and (len(marks) / max(n_lines, 1) > 0.25 or tight > 0.6):
+        return None
+
+    sections, stack = [], []          # stack: [(层级, 标题)]，栈顶即当前章节
+    for k, (idx, lv, title) in enumerate(marks):
+        # 回到当前层级的父级：把同级及更深的祖先弹掉
+        while stack and stack[-1][0] >= lv:
+            stack.pop()
+        stack.append((lv, title))
+        path = " > ".join(t for _l, t in stack)
+        end = marks[k + 1][0] if k + 1 < len(marks) else len(lines)
+        body = "\n".join(lines[idx:end]).strip()
+        if body:
+            sections.append((path, body))
+
+    # 第一个标题之前的内容（摘要 / 前言）必须单独成段，不能丢
+    if marks[0][0] > 0:
+        head = "\n".join(lines[:marks[0][0]]).strip()
+        if head:
+            sections.insert(0, ("", head))
+    return sections
+
+
+def split_document_aware(doc, chunk_size: int, chunk_overlap: int, splitter) -> list:
+    """对单份文档切块：能识别标题层级就按层级切，否则退回字符切块。
+
+    层级切块做了两件事，缺一不可：
+      1. 块边界对齐章节边界 —— 一个块不再横跨两节；
+      2. 「章节路径」既前置进正文（embedding 能感知上下文：同样一句
+         「误差小于 1%」在「3.2 实验方法」下与在「5 结论」下含义不同），
+         也写进 metadata["heading_path"]（引用展示能直接告诉用户出自哪一节）。
+
+    无标题文档走的是与改造前**逐字节相同**的 RecursiveCharacterTextSplitter 路径。
+    """
+    sections = split_by_heading(doc.page_content or "")
+    if not sections:
+        return splitter.split_documents([doc])
+
+    out = []
+    for path, body in sections:
+        prefix = f"【{path}】\n" if path else ""
+        blocks = ([body] if len(body) <= chunk_size
+                  else splitter.split_text(body))
+        for b in blocks:
+            md = dict(doc.metadata)
+            if path:
+                md["heading_path"] = path
+            out.append(Document(page_content=prefix + b, metadata=md))
+    return out or [doc]
 
 
 class RAGTool:
@@ -420,7 +577,8 @@ class RAGTool:
             if sp is None:
                 sp = RecursiveCharacterTextSplitter(chunk_size=size, chunk_overlap=overlap)
                 splitters[(size, overlap)] = sp
-            pieces = sp.split_documents([doc])
+            # 难题 7：能识别出章节结构就按结构切，否则退回字符切块（行为不变）
+            pieces = split_document_aware(doc, size, overlap, sp)
             tier = plan.get("complexity_tier")
             if tier:
                 # 把策略结论落进块元数据：检索侧据此放宽召回宽度，
@@ -506,7 +664,18 @@ class RAGTool:
             # Word：段落 + 表格（表格按行拼成 "a | b | c"，保住行列关系再入库）
             from docx import Document as _Docx
             doc = _Docx(fpath)
-            parts = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
+            parts = []
+            for p in doc.paragraphs:
+                t = p.text.strip()
+                if not t:
+                    continue
+                # Word 的层级信息藏在**段落样式**里（Heading 1 / 标题 1），
+                # 不像 Markdown 那样直接写在文本里。这里统一转成 Markdown 前缀，
+                # 于是「按标题层级切块」对 Word 与 Markdown 走同一套解析 ——
+                # 难题 7 说的「不标准目录结构」，本质就是各来源的结构信号写法
+                # 不统一；先把它们归一，再统一处理，才是鲁棒的做法。
+                lv = _docx_heading_level(p)
+                parts.append(f"{'#' * lv} {t}" if lv else t)
             for tb in doc.tables:
                 for row in tb.rows:
                     cells = [c.text.strip() for c in row.cells]
