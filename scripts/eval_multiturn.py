@@ -14,10 +14,15 @@
     python scripts/eval_multiturn.py
 退出码 0 = fixed 全通过；1 = 有项目没通过。
 """
+import argparse
+import json
 import os
 import sys
+from datetime import datetime
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
+REPORT_DIR = os.path.join(ROOT, "data", "eval", "reports")
 
 from agent.graph import AgentGraph  # noqa: E402
 
@@ -88,8 +93,16 @@ def run_dialogue(agent, dlg, use_history):
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    # **默认落盘**：这个脚本此前不保存任何报告，于是 README 引用的
+    # 「baseline 3/8 → 8/8」在 data/eval/reports/ 里找不到任何产物支撑，
+    # 属于「有结论、无证据」。评测证据必须留成文件，需要时用 --no-save 关掉。
+    ap.add_argument("--no-save", action="store_true", help="不落盘报告")
+    args = ap.parse_args()
+
     agent = AgentGraph()
     summary = []
+    details = []
 
     for dlg in DIALOGUES:
         print("=" * 78)
@@ -109,6 +122,9 @@ def main():
                     print(f"        ✗ {r['why']}")
                     print(f"        A: {r['ans']}")
             summary.append((dlg["name"], mode, passed, total))
+            details.append({"dialogue": dlg["name"],
+                            "mode": "fixed" if use_hist else "baseline",
+                            "passed": passed, "total": total, "turns": rows})
             need_5 = dlg["name"].startswith("A")
             if use_hist and need_5 and passed < total:
                 print(f"\n  ⚠️ 未达标：赛题要求「连续 5 轮以上准确」")
@@ -126,6 +142,20 @@ def main():
     print(f"\n  多轮准确率：baseline {base_total}/{fixed_all}"
           f" → fixed {fixed_total}/{fixed_all}"
           f"（{fixed_total / fixed_all * 100:.1f}%）")
+
+    if not args.no_save:
+        os.makedirs(REPORT_DIR, exist_ok=True)
+        stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        path = os.path.join(REPORT_DIR, f"multiturn-{stamp}.json")
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump({
+                "criterion": "赛题：具备多轮 3 分 / 连续 5 轮以上准确 5 分",
+                "baseline_passed": base_total, "fixed_passed": fixed_total,
+                "total": fixed_all,
+                "fixed_rate": fixed_total / fixed_all if fixed_all else 0.0,
+                "dialogues": details,
+            }, fh, ensure_ascii=False, indent=2)
+        print(f"\n报告已落盘：{path}")
 
     ok = fixed_total == fixed_all
     print("\n" + ("✅ 全部通过" if ok else "❌ 有未通过项"))

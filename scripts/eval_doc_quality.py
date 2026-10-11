@@ -34,14 +34,34 @@ from tools.doc_quality import (  # noqa: E402
     quality_score_text, text_features,
 )
 
-WS = r"D:\硬件数据\deepseek-harness-project\中电子云"
-OHR = os.path.join(WS, "data", "ohr")
+# OHR-Bench 数据默认放在仓库内 data/ohr/；可用环境变量 OHR_DIR 覆盖。
+# （此前写死作者本机 D 盘绝对路径，换机必崩）
+OHR = os.environ.get("OHR_DIR") or os.path.join(ROOT, "data", "ohr")
 OUT = os.path.join(ROOT, "data", "eval", "doc_quality")
 REPORT_DIR = os.path.join(ROOT, "data", "eval", "reports")
 SEED = 20260925
 TIERS = ["gt_text", "formatting_noise_mild",
          "formatting_noise_moderate", "formatting_noise_severe"]
-FONT = r"C:\Windows\Fonts\msyh.ttc"
+
+
+def _find_font():
+    """挑一个可用的中文字体：优先环境变量 EVAL_FONT，其次各系统常见位置。
+
+    此前写死 C:\\Windows\\Fonts\\msyh.ttc —— 在 Linux/macOS 上直接抛异常。
+    找不到时返回 None，渲染层退回 PIL 默认字体（中文会显示为方框，但不崩）。
+    """
+    cands = [os.environ.get("EVAL_FONT"), r"C:\Windows\Fonts\msyh.ttc",
+             r"C:\Windows\Fonts\simhei.ttf",
+             "/System/Library/Fonts/PingFang.ttc",
+             "/usr/share/fonts/truetype/wqy/wqy-zenhei.ttc",
+             "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc"]
+    for p in cands:
+        if p and os.path.exists(p):
+            return p
+    return None
+
+
+FONT = _find_font()
 
 
 # ---------------- A. 复杂度 vs 官方排版噪声档 ----------------
@@ -213,6 +233,17 @@ def part_b(n_base=3):
 
 
 def main():
+    # 这个脚本此前**没有 argparse**，而 README 里写的是
+    # `python scripts/eval_doc_quality.py --save` —— 参数会被静默忽略。
+    # 这里补上参数解析（顺带获得 --help），并明确：报告**总是落盘**，
+    # `--save` 只是与其它 eval_*.py 的调用习惯保持一致的兼容写法。
+    import argparse
+    ap = argparse.ArgumentParser(
+        description="文档复杂度（难题 8）与质量检测（难题 9）的离线验证")
+    ap.add_argument("--save", action="store_true",
+                    help="兼容项：两条证据链的报告默认就会落盘")
+    ap.parse_args()
+
     random.seed(SEED)
     rate_a, det_a, mean_a, plan_stats = part_a()
     res_b, fp, n_clean, (f_s, f_t) = part_b()

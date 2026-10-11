@@ -15,10 +15,14 @@
 多表 JOIN 的题目期望集合会有多张表（如「销售额最高的客户」需要 Invoice + Customer）。
 """
 import argparse
+import json
 import os
 import sys
+from datetime import datetime
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
+REPORT_DIR = os.path.join(ROOT, "data", "eval", "reports")
 
 from tools.schema_linker import SchemaLinker          # noqa: E402
 from tools.sql_tool import SQLTool                    # noqa: E402
@@ -46,11 +50,31 @@ CASES = [
 
 
 def make_linker(use_vector: bool) -> SchemaLinker:
+    """构建 SchemaLinker。
+
+    两条外部依赖都必须能**独立降级**：
+      · LLM 只用于一次性生成中文语义画像（结果缓存到 data/schema_profile.json），
+        缺 key 或调用失败时退回缓存 / 纯词法，不该让整个评测崩掉；
+      · 向量仅在 `--no-vector` 之外构建。
+
+    此前这里无条件 new 一个 ChatOpenAI，于是标称「只看词法」的 `--no-vector`
+    在没有 API Key 的机器上依然直接抛异常 —— 与它的说明完全不符。
+    """
     from config import Config
-    from langchain_openai import ChatOpenAI
     tool = SQLTool()
-    llm = ChatOpenAI(model=Config.LLM_MODEL, api_key=Config.LLM_API_KEY,
-                     base_url=Config.LLM_BASE_URL, temperature=0)
+    llm = None
+    if Config.LLM_API_KEY:
+        try:
+            from langchain_openai import ChatOpenAI
+            llm = ChatOpenAI(model=Config.LLM_MODEL, api_key=Config.LLM_API_KEY,
+                             base_url=Config.LLM_BASE_URL, temperature=0)
+        except Exception as e:
+            print(f"[警告] LLM 不可用（{type(e).__name__}: {e}），"
+                  "跳过语义画像生成、改用已有缓存\n")
+    else:
+        print("[提示] 未配置 LLM_API_KEY：跳过语义画像生成，"
+              "改用 data/schema_profile.json 的已有缓存\n")
+
     emb = None
     if use_vector:
         try:
@@ -59,6 +83,8 @@ def make_linker(use_vector: bool) -> SchemaLinker:
                 model=Config.EMBEDDING_MODEL,
                 api_key=Config.EMBEDDING_API_KEY,
                 base_url=Config.EMBEDDING_BASE_URL,
+                # 非 OpenAI 官方端点必须关掉 token 预编码（与 rag_tool / sql_tool 口径一致）
+                check_embedding_ctx_length=False,
             )
         except Exception as e:
             print(f"[警告] 向量不可用（{type(e).__name__}），退化为纯词法\n")
@@ -70,6 +96,7 @@ def main() -> int:
     ap.add_argument("--top-k", type=int, default=6)
     ap.add_argument("--no-vector", action="store_true", help="只测词法")
     ap.add_argument("--verbose", action="store_true")
+    ap.add_argument("--save", action="store_true", help="把评测结果落盘为 JSON 报告")
     args = ap.parse_args()
 
     lk = make_linker(not args.no_vector)
@@ -79,6 +106,7 @@ def main() -> int:
     print("=" * 74)
 
     top1_ok = recall_ok = 0
+    results = []
     for q, exp in CASES:
         rank = lk.select(q, top_k=args.top_k)
         got = [r[0] for r in rank]
@@ -87,6 +115,12 @@ def main() -> int:
         hitr = bool(exp & got_set)
         top1_ok += hit1
         recall_ok += hitr
+        results.append({
+            "q": q, "expect": sorted(exp), "got": got,
+            "top1": bool(hit1), "recall": bool(hitr),
+            "top_rank": [{"table": t, "score": round(s, 3), "why": w}
+                         for t, s, w in rank[:4]],
+        })
 
         flag = "OK  " if hit1 else ("MISS" if not hitr else "半中")
         print(f"{flag} {q}")
@@ -99,6 +133,24 @@ def main() -> int:
     print("=" * 74)
     print(f"top1 命中率  {top1_ok}/{n} = {top1_ok / n * 100:.1f}%")
     print(f"recall@{args.top_k}  {recall_ok}/{n} = {recall_ok / n * 100:.1f}%")
+
+    # 落盘：中级难题 4 要求提交「实现效果关键数据」，没有报告就等于没有证据。
+    # 文件名带模式前缀，方便把「仅词法」与「词法+向量」两份摆在一起对比。
+    if args.save:
+        os.makedirs(REPORT_DIR, exist_ok=True)
+        stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        mode = "lexical" if args.no_vector else "lexical+vector"
+        path = os.path.join(REPORT_DIR, f"schemalink-{mode}-{stamp}.json")
+        with open(path, "w", encoding="utf-8") as fh:
+            json.dump({
+                "mode": mode, "top_k": args.top_k,
+                "n_tables": len(tables), "n": n,
+                "top1_hit": top1_ok, "top1_rate": top1_ok / n,
+                "recall_hit": recall_ok, "recall_rate": recall_ok / n,
+                "cases": results,
+            }, fh, ensure_ascii=False, indent=2)
+        print(f"\n报告已落盘：{path}")
+
     return 0 if top1_ok / n >= 0.9 else 1
 
 

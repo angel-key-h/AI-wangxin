@@ -31,26 +31,36 @@ check("页面执行无异常", not errs, "; ".join(errs[:2]))
 labels = [b.label for b in at.sidebar.button]
 check("侧边栏有「♻️ 重载代码」按钮", any("重载代码" in x for x in labels), f"现有按钮：{labels}")
 
-# 侧边栏的两个 expander 也要在（Schema / Schema Linking）
-exp = [e.label for e in at.sidebar.expander]
-check("数据库信息区可展开", any("Schema" in x for x in exp), f"现有：{exp}")
+from config import Config  # noqa: E402
 
-# 问一个 SQL 类问题，看来源块是否常驻
-at.chat_input[0].set_value("智育前十是谁").run()
-check("提问后无异常", not at.exception, "; ".join(str(e.value) for e in at.exception[:2]))
-lbl = [e.label for e in at.expander]
-check("渲染出「引用文档片段」块", any("引用文档片段" in x for x in lbl), f"现有：{lbl}")
-check("渲染出「推理过程」块", any("推理过程" in x for x in lbl))
+# 下面这几项都依赖**智能体实例**（要连库、要调模型）。缺 Key 时 agent 起不来，
+# 它们物理上不可能出现 —— 此时应当跳过，而不是报红。否则每次没配 .env 都会
+# 显示成「页面坏了」，真正的前端回归反而被淹没。
+_degraded_keys = Config.missing_keys()
+if _degraded_keys:
+    print(f"⏭️  缺少 API Key（{'、'.join(_degraded_keys)}）：跳过依赖智能体实例的断言"
+          "（数据库信息区 / 引用片段块 / 推理过程块 / 多轮消解提示）")
+else:
+    # 侧边栏的两个 expander 也要在（Schema / Schema Linking）
+    exp = [e.label for e in at.sidebar.expander]
+    check("数据库信息区可展开", any("Schema" in x for x in exp), f"现有：{exp}")
 
-# 多轮：追问必须能在界面上看到「指代消解」这一步。
-# 多轮能力如果不可见，评委既无法确认它生效，答偏时也无从归因 —— 这正是
-# 可解释性评分项要的东西，所以要进回归。
-at.chat_input[0].set_value("胡子扬的德育测评分是多少？").run()
-at.chat_input[0].set_value("那他的智育测评分呢？").run()
-check("追问后无异常", not at.exception, "; ".join(str(e.value) for e in at.exception[:2]))
-info_txt = " ".join(str(i.value) for i in at.info)
-check("追问渲染出「多轮指代消解」提示", "指代消解" in info_txt,
-      f"现有 info：{info_txt[:160]}")
+    # 问一个 SQL 类问题，看来源块是否常驻
+    at.chat_input[0].set_value("智育前十是谁").run()
+    check("提问后无异常", not at.exception, "; ".join(str(e.value) for e in at.exception[:2]))
+    lbl = [e.label for e in at.expander]
+    check("渲染出「引用文档片段」块", any("引用文档片段" in x for x in lbl), f"现有：{lbl}")
+    check("渲染出「推理过程」块", any("推理过程" in x for x in lbl))
+
+    # 多轮：追问必须能在界面上看到「指代消解」这一步。
+    # 多轮能力如果不可见，评委既无法确认它生效，答偏时也无从归因 —— 这正是
+    # 可解释性评分项要的东西，所以要进回归。
+    at.chat_input[0].set_value("胡子扬的德育测评分是多少？").run()
+    at.chat_input[0].set_value("那他的智育测评分呢？").run()
+    check("追问后无异常", not at.exception, "; ".join(str(e.value) for e in at.exception[:2]))
+    info_txt = " ".join(str(i.value) for i in at.info)
+    check("追问渲染出「多轮指代消解」提示", "指代消解" in info_txt,
+          f"现有 info：{info_txt[:160]}")
 
 print()
 if FAIL:
