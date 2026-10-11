@@ -1,28 +1,51 @@
-# 精准问数/问答智能体 · 依赖
-streamlit
-pandas
-openpyxl
-python-dotenv
-langgraph
-langchain-core
-langchain-openai
-langchain-community
-langchain-chroma
-langchain-text-splitters
-chromadb
-pypdf
-SQLAlchemy
-# 图片识别（OCR 主线）：RapidOCR 自带模型，离线可用
-rapidocr-onnxruntime
-onnxruntime
-Pillow
-# 评测与数据集（读 OHR-Bench parquet / 出评测报告）
-pyarrow
-tabulate
-# 文档与图表（生成多格式知识库文档、画性能对比图）
-matplotlib
-python-docx
-python-pptx
-reportlab
-# 繁→简转换（难题 9「繁体字识别并校正」）
-zhconv
+# 精准问数/问答智能体 · 依赖清单
+#
+# 版本号 = 本机实测通过的版本（Windows 11 / Python 3.13）。
+# 之前这里一个版本号都没有，既不符合赛题「依赖包列表**及版本号**」的要求，
+# 也无法保证换台机器装出来的环境与评测报告一致。用 == 钉死是为了可复现：
+# 想放宽到兼容最新版，把 == 换成 >= 即可。
+
+# ── Web 前端 ──
+streamlit==1.65.0
+pandas==3.0.6
+openpyxl==3.1.5
+python-dotenv==1.2.4
+
+# ── Agent 编排与 LLM ──
+langgraph==1.2.14
+langchain-core==1.6.9
+langchain-openai==1.7.0
+langchain-community==0.4.2
+
+# ── 向量检索 ──
+langchain-chroma==1.1.0
+langchain-text-splitters==1.1.3
+chromadb==1.5.9
+
+# ── 文档解析 ──
+pypdf==6.20.0
+
+# ── 数据库 ──
+SQLAlchemy==2.1.4
+
+# ── 图片识别（OCR 主线）：RapidOCR 自带模型，离线可用 ──
+rapidocr-onnxruntime==1.2.3
+onnxruntime==1.31.0
+Pillow==12.3.0
+# cv2 / numpy 由 tools/image_tool.py 直接 import（缺一不可），
+# 此前只靠 rapidocr 的传递依赖带进来，这里是显式声明
+opencv-python==5.0.0.93
+numpy==2.5.3
+
+# ── 评测与数据集（读 OHR-Bench parquet / 出评测报告）──
+pyarrow==25.0.1
+tabulate==0.10.0
+
+# ── 文档与图表（生成多格式知识库文档、画性能对比图）──
+matplotlib==3.11.2
+python-docx==1.2.0
+python-pptx==1.0.2
+reportlab==5.0.1
+
+# ── 繁→简转换（难题 9「繁体字识别并校正」）──
+zhconv==1.4.3

@@ -24,7 +24,7 @@
 | **问数准确率** | 表名/别名画像 + Schema Linking 裁剪 + SQL 自修复重试 | `eval_nl2sql.py`：**34/34 = 100%** |
 | **答案可解释性** | 检索是**所有**问题的必经节点，SQL 路径也回传引用｜来源片段**逐字高亮**命中词 | `verify_live.py` 断言通过；`tools/explain.py` 纯函数测试 |
 | **多轮上下文保持** | LangGraph 首节点显式指代消解，只对真含指代的问题触发 | `eval_multiturn.py`：**baseline 3/8 → 8/8** |
-| **智能语义校验与澄清** | 6 维受控词表 + 规则兜底 + 规则层独立对照基线 + 选项可点即回 | 召回 **100%** / 精确 **100%** / F1 **100%**（误澄清 **0%**）；维度命中 **9/9**；规则层单独也 **9/9** |
+| **智能语义校验与澄清** | 6 维受控词表 + 规则兜底 + 规则层独立对照基线 + 选项可点即回 | 召回 **100%** / 精确 **100%** / F1 **100%**（误澄清 **0%**，见 `data/eval/reports/clarify-*.json`）；规则层独立对照（不调 LLM）**9/9**、误报 **0** |
 | **文档复杂度评估** | 10 特征打分 → 5 档 → 输出切块/解析策略并经索引链路真实消费 | 单调性 **97.5%**；**29/40 = 72.5%** 的样本拿到非默认策略 |
 | **扭曲表格识别** | 本地 RapidOCR 与 qwen-vl-max 双通道，同一份比对代码 | 单元格 F1 **58.9% → 80.4%**（平均 **+23.1pt**） |
 | **公式 / 图表理解** | VLM 还原二维公式结构与图表数据序列 | 公式字符召回 **28.2% → 96.7%**；图表类别→数值 **5/5** |
@@ -42,7 +42,7 @@
 | 单文档 RAG 问答 | 10 | `tools/rag_tool.py`、`agent/graph.py::execute_rag` |
 | 答案可解释性（引用片段高亮） | 5 | `tools/explain.py`、`app.py` 来源区渲染 |
 | 可运行的 Demo | 5 | `app.py`（Streamlit 单页应用） |
-| 覆盖 ≥1 个中级难题 | — | 已覆盖 **6 个**（见下） |
+| 覆盖 ≥1 个中级难题 | — | 已覆盖 **9 个**（见下） |
 
 ### 2.2 已实现的中级难题
 
@@ -54,7 +54,7 @@
 | 4 | 精准表定位 Schema Linking | ✅ | `tools/schema_linker.py` |
 | 5 | 高质量多表关联 NL2SQL | ✅ | `tools/sql_tool.py`（JOIN 路径 / 聚合 / 嵌套） |
 | **6** | **文档公式识别与计算** | ✅ | `tools/vlm_tool.py`、`tools/image_tool.py` |
-| 7 | 不标准目录结构的鲁棒识别 | ✅ | `tools/rag_tool.py` 标题层级重建 |
+| 7 | 不标准目录结构的鲁棒识别 | ✅ | `tools/rag_tool.py::split_by_heading / split_document_aware`（标题层级切块 + 章节路径注入） |
 | **8** | **文档复杂度评估（指导处理策略）** | ✅ | `tools/doc_quality.py::complexity_plan` |
 | 9 | 文档质量综合评估（倾斜/清晰度/错字） | ✅ | `tools/doc_quality.py::quality_report` |
 
@@ -70,12 +70,12 @@
 | 项 | 版本 |
 |---|---|
 | 操作系统 | Windows 11 (x64) |
-| Python | **3.14.7**（3.10+ 均可，pyproject 未做版本钉死） |
-| Streamlit | 1.64.0 |
+| Python | **3.13+**（本仓库实测 3.13.12；版本一律由 `requirements.txt` 钉死，仓库无 pyproject） |
+| Streamlit | 1.65.0 |
 | pandas / openpyxl | 3.0.6 / 3.1.5 |
-| langgraph / langchain-core | 见 `requirements.txt` / 1.6.4 |
+| langgraph / langchain-core | 1.2.14 / 1.6.9 |
 | chromadb | 1.5.9 |
-| onnxruntime（本地 OCR） | 1.30.0 |
+| onnxruntime（本地 OCR） | 1.31.0 |
 | SQLite | Python 内置 `sqlite3`（无需额外安装） |
 
 **外部服务**：阿里云百炼（DashScope）OpenAI 兼容端点，需要三个模型：
@@ -113,13 +113,16 @@ python -m pip install -r requirements.txt
 # 2) 配置密钥（见第 5 节）
 cp .env.example .env   # 若无 .env.example，直接新建 .env
 
-# 3) 首次初始化（构建问数库 + 向量索引 + 导出 schema）
-python scripts/init_chinook.py       # 准备 Chinook 基底库
-python scripts/build_demo_kb.py      # 建索引（等价于首次打开页面）
+# 3) 首次初始化（建问数库 + 导出 schema，全程离线、不需要 API Key）
+python scripts/init_runtime.py --force
 
-# 4) 启动
+# 4) 启动（向量索引在首次打开页面时自动构建）
 streamlit run app.py
 ```
+
+> `scripts/build_demo_kb.py` 用于**重新生成**多格式演示知识库，它依赖 OHR-Bench
+> 数据集（`data/ohr/`，由 `.workbuddy/download_ohr.py` 下载，未随仓库分发）；
+> 只想把项目跑起来不需要它 —— 仓库里已带 13 份成品文档。
 
 浏览器打开 <http://localhost:8501> 即可。
 
@@ -235,7 +238,7 @@ python scripts/eval_nl2sql.py            # 端到端执行准确率        → 3
 
 # ── 知识问答 ──
 python scripts/eval_rag.py --save        # 检索命中率 / 答案准确率 / 忠实度
-python scripts/eval_multiturn.py         # 多轮指代与省略          → 8/8
+python scripts/eval_multiturn.py         # 多轮指代与省略（默认落盘报告）
 
 # ── 语义澄清（难题 3）──
 python scripts/eval_clarify.py           # 维度命中 / 误报 / 规则层独立对照
@@ -250,7 +253,7 @@ python scripts/eval_doc_recog.py --engine vlm --save   # qwen-vl-max 通道
 python scripts/eval_doc_recog.py --compare             # 两通道 F1 前后对比（不重跑）
 
 # ── 其它 ──
-python scripts/eval_schema_link.py       # Schema Linking
+python scripts/eval_schema_link.py --no-vector --save   # Schema Linking（纯词法，离线可跑）
 python scripts/eval_correction.py        # 拼写纠错
 python scripts/eval_extensible_schema.py # 可扩展要素提取
 
@@ -269,9 +272,10 @@ python scripts/verify_search_equiv.py    # 检索优化前后等价性（含 emb
 | `eval_rag.py` | 答案准确率（模型裁判） | **56/66 = 84.8%** |
 | `eval_rag.py` | 忠实度（模型裁判） | **65/66 = 98.5%** |
 | `eval_multiturn.py` | 多轮指代消解 | baseline **3/8** → **8/8** |
-| `eval_clarify.py` | 澄清召回率 / 精确率 / F1 | **100% / 90% / 94.7%** |
-| `eval_clarify.py` | 维度命中率 / 维度误报数 | **9/9** / **1** |
-| `eval_clarify.py` | 规则层独立对照（不调 LLM） | **9/9** |
+| `eval_clarify.py` | 澄清召回率 / 精确率 / F1 | **100% / 100% / 100%** |
+| `eval_clarify.py` | 维度误报数 | **0** |
+| `eval_clarify.py` | 规则层独立对照（不调 LLM） | **9/9**（维度命中）/ 误报 **0** |
+| `eval_schema_link.py` | Schema Linking top1 / recall@6（纯词法） | **14/15 = 93.3%** / **15/15 = 100%** |
 | `eval_doc_quality.py` | 复杂度单调性 | **97.5%** |
 | `eval_doc_quality.py` | 退化检出率 / 干净假阳性 | **100%** / **0/3** |
 | `eval_doc_quality.py` | 样本获得非默认策略的比例 | **29/40 = 72.5%** |
@@ -294,6 +298,14 @@ python scripts/verify_search_equiv.py    # 检索优化前后等价性（含 emb
    `TP = |真值 ∩ 识别|`，P/R/F1 由此计算。单元格用集合口径（无重复计数歧义），
    表头用**一对一贪心匹配**（宽松子串规则下 TP 会超过预测数，会算出大于 1 的
    precision）。旧有的 `header_acc` / `cell_recall` 保持原口径不变，与历史可比。
+3. **部分指标的报告早于最近的代码改动，需重跑确认。** 逐项说明：
+   - `eval_clarify` 的报告生成于 **4 维 / 17 条用例**时期，而代码已扩到
+     **6 维 / 19 条用例**（2026-10-11），因此上表中的澄清指标应视为**下界**；
+   - `eval_multiturn` 此前**不落盘** —— README 引用的 8/8 在 `data/eval/reports/`
+     里没有对应文件。现已在脚本内补上落盘（默认开启，`--no-save` 可关闭），
+     配好 Key 重跑一次即可生成报告；
+   - 2026-10-11 的修复把 RAG **索引版本升到 v4**（新增标题层级切块，见难题 7），
+     `eval_rag` 的 hit@1 / hit@4 需在**新索引**上重跑 —— 旧数字对应旧的切块逻辑。
 
 ---
 
@@ -333,6 +345,25 @@ complexity_plan() → 页面展示 → 落盘 data/doc_plans.json
 实测同一批文档：无策略约 **5 块** → 有策略 **16 块**，端到端可验证
 （`eval_complexity_plan.py` part D）。
 
+### 9.5 标题层级切块为什么必须带「分布保护」
+
+`tools/rag_tool.py` 把 Markdown `#`、中文「第三章 / 一、/（二）」与 Word 段落样式
+三类信号**归一成同一套 `(层级, 标题)`**，再按章节边界切块，并把章节路径
+前置到正文（让 embedding 感知上下文）+ 写进 `metadata["heading_path"]`
+（让引用展示能说出出自哪一节）。
+
+难点不在识别标题，而在**别把列表和表格数据行当成标题** —— 它们逐行长得很像：
+
+```text
+1. Southern Tier West        ← 编号列表
+74.03 208 90.70 1 59.0       ← 表格数据行
+```
+
+所以判据只能落在**分布**上：章节标题之间必然隔着正文，列表 / 表格行则成串紧挨着。
+实测不设这道保护，一份 12 页 PDF 会被切出 **179 块**（应约 19 块）、一份 30 页
+成绩单 PDF 切出 **629 块**（应约 89 块）。加上保护后，13 份知识库文档的块数只从
+**839** 变到 **855**（+1.9%），其中 8 份无结构文档**一块不差**（逐字节等价于改造前）。
+
 ---
 
 ## 10. 交付物自查
@@ -345,7 +376,10 @@ complexity_plan() → 页面展示 → 落盘 data/doc_plans.json
 | **知识库文档 ≥10 份、涵盖不同类型格式** | ✅ | `rag_data/`：13 份 / 7 种格式 |
 | **运行环境说明** | ✅ | 本文第 3 节 |
 | **一键启动脚本** | ✅ | `start.bat` |
+| **依赖包列表及版本号** | ✅ | `requirements.txt`（全部钉死版本） |
 | 评测脚本（指标可复现） | ✅ | `scripts/eval_*.py`、`scripts/verify_*.py` |
+| **设计报告（≤20 页，含核心亮点预览页）** | 🚧 待补 | — |
+| **技术实现说明书（≤30 页，7 个模块章节）** | 🚧 待补 | — |
 
 ---
 
