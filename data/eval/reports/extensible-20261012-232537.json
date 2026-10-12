@@ -1,0 +1,54 @@
+{
+  "metric": "中级难题 2 · 可扩展的要素提取（确定性检查，不消耗 LLM）",
+  "n_tables": 16,
+  "n_checks": 9,
+  "passed": 9,
+  "pass_rate": 1.0,
+  "checks": [
+    {
+      "name": "每张表都有中文语义画像（新增表也自动有）",
+      "ok": true,
+      "detail": "全覆盖"
+    },
+    {
+      "name": "画像带结构指纹（结构变则失效重建）",
+      "ok": true,
+      "detail": "fingerprint=c1d764b51401a5f5…"
+    },
+    {
+      "name": "画像包含中文（中文表名/别名/列含义）",
+      "ok": true,
+      "detail": "中文 1141 字"
+    },
+    {
+      "name": "画像含「别名」信息（支撑难题 1 的口语/别名识别）",
+      "ok": true,
+      "detail": "例：Album → {\"zh\": \"音乐专辑表\", \"aliases\": [\"专辑\", \"唱片\", \"音乐专辑\", \"专辑信息\", \"专辑列表\", \"大碟\"], \"columns_zh\": {\"AlbumId\": \"专辑编号\", \"Title\": \"专辑名称\", \"ArtistId\": \"歌手编号\"}}"
+    },
+    {
+      "name": "评测中新增的 4 张表已自动补画像（无代码改动、无 Few-Shot）",
+      "ok": true,
+      "detail": "新增表：['finance_JPMORGAN_2022_10K_page0', 'finance_JPMORGAN_2022_10K_page3', 'finance_JPMORGAN_2023Q2_10Q', 'law_ArmstrongFlooringInc_20190107_8K_EX1']"
+    },
+    {
+      "name": "指纹由「表名+列名」的哈希构成（不含行数/数据内容，数据变不触发重建）",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "新增一张表 → 指纹变化（会触发增量补画像）",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "仅数据变化 → 指纹不变（不重复调用 LLM）",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "name": "实现不依赖 Few-Shot 示例注入（只扫代码，排除注释）",
+      "ok": true,
+      "detail": "代码中无 Few-Shot 模式"
+    }
+  ]
+}

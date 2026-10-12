@@ -18,22 +18,28 @@
   4. 无 Few-Shot：源码里不出现 few-shot 示例注入
 
 用法：python scripts/eval_extensible_schema.py    退出码 0 = 全部通过
+     加 --no-save 只打印、不落盘报告
 """
+import argparse
 import hashlib
 import json
 import os
 import re
 import sys
+from datetime import datetime
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 os.chdir(ROOT)
+REPORT_DIR = os.path.join(ROOT, "data", "eval", "reports")
 
 FAIL = []
+RESULTS = []
 
 
 def check(name, ok, detail=""):
     print(f"{'✅' if ok else '❌'} {name}" + (f" —— {detail}" if detail else ""))
+    RESULTS.append({"name": name, "ok": bool(ok), "detail": detail})
     if not ok:
         FAIL.append(name)
 
@@ -115,6 +121,28 @@ check("实现不依赖 Few-Shot 示例注入（只扫代码，排除注释）", 
 print()
 if FAIL:
     print(f"❌ 未通过 {len(FAIL)} 项：" + "、".join(FAIL))
-    sys.exit(1)
-print("✅ 全部通过 —— 难题 2 的可扩展性性质成立")
-sys.exit(0)
+else:
+    print("✅ 全部通过 —— 难题 2 的可扩展性性质成立")
+
+# 落盘：赛题要求提交「实现效果关键数据」。这套检查全部是确定性验证、不消耗
+# LLM 额度，本就是最该固化下来给评委看的一类证据，之前却只打印在终端里。
+args = argparse.ArgumentParser(description="中级难题 2 · 可扩展的要素提取")
+args.add_argument("--no-save", action="store_true", help="只打印，不落盘报告")
+args = args.parse_args()
+if not args.no_save:
+    os.makedirs(REPORT_DIR, exist_ok=True)
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    path = os.path.join(REPORT_DIR, f"extensible-{stamp}.json")
+    passed = len(RESULTS) - len(FAIL)
+    with open(path, "w", encoding="utf-8") as fh:
+        json.dump({
+            "metric": "中级难题 2 · 可扩展的要素提取（确定性检查，不消耗 LLM）",
+            "n_tables": len(tables),
+            "n_checks": len(RESULTS),
+            "passed": passed,
+            "pass_rate": passed / len(RESULTS),
+            "checks": RESULTS,
+        }, fh, ensure_ascii=False, indent=2)
+    print(f"报告已落盘：{path}")
+
+sys.exit(1 if FAIL else 0)

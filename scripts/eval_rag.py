@@ -229,9 +229,45 @@ def main():
         os.makedirs(REPORT_DIR, exist_ok=True)
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         slim = [{k: v for k, v in r.items() if k != "chunks"} for r in results]
+
+        def rate(pred, pool):
+            return (sum(1 for r in pool if pred(r)) / len(pool)) if pool else None
+
+        # answer_acc / faithful 此前只落在 .md 里，JSON 只有 hit@1/hit@4/loose ——
+        # 「脚本化核对数字」这件事就做不成了（评委或后续脚本没法直接读）。
+        # 既然赛题要求「实现效果关键数据」，就把聚合指标一并写进 JSON。
+        by_ev, by_doc = {}, {}
+        for ev in ("text", "table", "equation"):
+            sub = [r for r in results if r["ev"] == ev]
+            if sub:
+                by_ev[ev] = {
+                    "n": len(sub),
+                    "hit@4": rate(lambda r: r["hitk"], sub),
+                    "loose": rate(lambda r: r["loose"], sub),
+                    "answer_acc": None if args.no_judge
+                    else rate(lambda r: r.get("correct") == "yes", sub),
+                }
+        for dom in sorted({r["doc"].split("/")[0] for r in results}):
+            sub = [r for r in results if r["doc"].startswith(dom + "/")]
+            by_doc[dom] = {"n": len(sub), "hit@4": rate(lambda r: r["hitk"], sub)}
+
         with open(os.path.join(REPORT_DIR, f"rag-{stamp}.json"), "w", encoding="utf-8") as fh:
-            json.dump({"hit@1": hit1, "hit@4": hitk, "loose": loose,
-                       "results": slim}, fh, ensure_ascii=False, indent=2)
+            json.dump({
+                "n": n,
+                "hit@1": hit1,
+                "hit@4": hitk,
+                "loose": loose,
+                "judge_enabled": not args.no_judge,
+                "answer_acc": None if args.no_judge
+                else rate(lambda r: r.get("correct") == "yes", results),
+                "answer_partial": None if args.no_judge
+                else rate(lambda r: r.get("correct") == "partial", results),
+                "faithful": None if args.no_judge
+                else rate(lambda r: r.get("faithful") == "yes", results),
+                "by_evidence": by_ev,
+                "by_domain": by_doc,
+                "results": slim,
+            }, fh, ensure_ascii=False, indent=2)
         md = [f"# RAG 评测报告（{stamp}）", "",
               f"- 知识库：{len(os.listdir(KB_DIR))} 页（OHR-Bench gt 子集，{blob['meta']['docs']} 份文档）",
               f"- 问题数：{n}", "",
