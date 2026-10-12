@@ -8,9 +8,13 @@
     （AdventureWorks 几十张）这条路必然崩。
 
 两级信号，各有各的活：
-    1. 词法：中文切 2-gram、英文切整词，跟「表名 + 列名」做重叠，再用 IDF
-       压掉「情况 / 成绩 / 名称」这类满库都是的字；样本值做子串精确命中加分。
-       对「智育前十」→ 列名「智育测评分排名」这种中文场景，词法是主力。
+    1. 词法：中文切 2-gram、英文做**词形归一**（复数还原 + CamelCase 拆子词）后
+       跟「表名 + 列名」做重叠，再用 IDF 压掉「情况 / 成绩 / 名称」这类满库都是的
+       字；样本值做子串精确命中加分。
+       对「智育前十」→ 列名「智育测评分排名」这种中文场景，词法是主力；
+       对英文直问（"How many customers"）则靠词形归一 —— 少了这一步，
+       复数的 customers 与单数的表名 Customer 零命中，所有表同分会退化成
+       按表名字母序返回（top1 变 Album，纯属巧合，见 _en_singular 的注释）。
     2. 向量：复用 RAG 那套智谱 embedding，补跨语言 / 近义
        （「有多少客户」→ Customer）。接口挂了就静默降级为纯词法，不阻塞主流程。
 
@@ -28,6 +32,11 @@ from config import Config
 
 CJK = re.compile(r"[\u4e00-\u9fff]+")
 ASCII_TOKEN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._\-]*")
+# CamelCase / 下划线 / 短横拆子词：CustomerId → Customer, Id；
+# BillingPostalCode → Billing, Postal, Code（若无此路，整词只能作为一个 gram
+# 参与匹配，「CustomerId」永远命中不了提问里的 customer）
+_EN_SUBWORD = re.compile(r"[A-Z]+(?![a-z])|[A-Z][a-z]*|[a-z]+|\d+")
+_EN_SEP = re.compile(r"[._\-]+")
 
 NGRAM = 2                 # 中文 n-gram 长度
 # 全量 schema 短于此值就直接全给，不做检索。可用环境变量调，方便对比实验。
@@ -44,12 +53,36 @@ UNIGRAM_WEIGHT = 0.4      # 单字权重。必须有单字这路：「各班平�
                           # 权重压低 + IDF 兜底，避免「的/是/分」这类字乱打分。
 VEC_GAIN = 30.0           # 向量分增益：先减基线再放大，见 select() 里的说明
 ASCII_WORD_WEIGHT = 2.0   # 英文整词比中文 2-gram 更有信息量
+EN_WHOLE_WEIGHT = 1.0     # 英文整词命中（表名 Customer ← 提问 customers）
+EN_SUBWORD_WEIGHT = 0.45  # 从 CamelCase 拆出的子词命中（Invoice.CustomerId → customer）
 
 PROFILE_FILE = os.path.join(Config.DATA_DIR, "schema_profile.json")
 
 # 中文里高频的功能字/疑问字，单独出现时不作为匹配依据
 CJK_STOP = set("的是了在和与或有多少什么哪吗呢请我他她它们个及以及对于关于怎么如何"
                "一下一个这个那个可以帮我想要知道查一下告诉我")
+
+# 英文功能词，同样不参与匹配。
+# 为什么必须有：样本值是**真实数据行**，里面全是自然语言（Chinook 的专辑名就有
+# 「Let There Be Rock」）。不挡功能词的话，提问里的 there / are 会命中这首歌名，
+# 而且因为「只有这一张表有这个词」IDF 极高 —— 实测 "How many customers are there"
+# 让 Album 拿了 5.67 分反超 Customer 的 4.39 分，top1 直接错成 Album。
+# 注意这里**不放** total / count / number / name / date 这类词：
+# 它们在数据库里是真实字段名（Invoice.Total 等），挡掉反而会漏匹配。
+EN_STOP = set("""
+a an the this that these those
+is are was were be been being am
+do does did done doing
+have has had having
+of in on at to for from by with and or but nor so
+if then than as not no yes
+there here where when what which who whom whose why how
+all any some each every both most more much many few less least other another
+i you he she it we they me him her us them my your his its our their
+can could will would shall should may might must
+please tell show give get find want need know about into over under between up down out off
+list let us
+""".split())
 
 PROFILE_PROMPT = """下面是数据库的表结构。请为每张表补一份**中文语义画像**，
 用于把中文提问定位到正确的表。
@@ -74,8 +107,59 @@ def _quote(name: str) -> str:
 
 
 
+def _en_singular(word: str) -> str:
+    """英文复数还原（保守的规则化处理，不做完整词干提取）。
+
+    为什么必须做：表名是单数 `Customer`，而用户提问写复数 `customers`，
+    `"customers" != "customer"` 直接零命中。一旦所有表都零分，select()
+    只能按表名字母序返回 —— 实测 "How many customers are there" 的 top1
+    变成了 `Album`（纯属字母序第一张）。补上复数归一后，英文提问才落得回
+    正常的词法匹配。规则保守是刻意的：宁可漏还原（少一次命中），
+    也不要把 analysis / status 这类词尾误剥成 analysi / statu。
+    """
+    if len(word) <= 3:
+        return word
+    if word.endswith("ies") and len(word) > 4:
+        return word[:-3] + "y"                    # companies → company
+    if word.endswith(("ches", "shes", "sses", "xes", "zes", "ses")):
+        return word[:-2]                          # boxes → box；classes → class
+    if word.endswith("s") and not word.endswith(("ss", "us", "is")):
+        return word[:-1]                          # customers → customer
+    return word
+
+
+def _en_forms(token: str) -> dict:
+    """一个英文词元能贡献的全部匹配形式 → 权重（**只出归一后的规范形**）。
+
+    三个刻意的设计，每一个都对应一次实测踩到的错：
+
+    1. 只保留规范形（单数），不把「原形」和「单数」并列输出。否则提问
+       "employees" 会同时产出 employees + employee 两个 gram，而表侧若也有
+       一张含这两个形式的表，就会被记两次分 —— 实测 "How many employees"
+       让一张财务表拿到 10.06 分、反超 Employee 的 4.39 分，纯粹是重复计数的假象。
+    2. 两档权重：整词命中满权，CamelCase 拆出的子词半权。否则
+       `Invoice.CustomerId` 拆出的 customer 会和表名 Customer 同分，靠字母序
+       决胜负 —— 那正是「有多少客户」被抢给 Invoice 的原因。
+    3. 过滤英文功能词。样本值是真实数据行、满是自然语言，不挡 there / are
+       这类词会命中专辑名「Let There Be Rock」，且因只有一张表含它而 IDF 极高。
+    """
+    out = {}
+    low = (token or "").lower()
+    if low and low not in EN_STOP:
+        out[_en_singular(low)] = EN_WHOLE_WEIGHT
+    parts = [p for seg in _EN_SEP.split(token or "")
+             if seg for p in _EN_SUBWORD.findall(seg)]
+    if len(parts) > 1:            # 拆不出多个子词就不拆，免得把整词降权
+        for part in parts:
+            part = part.lower()
+            if len(part) < 2 or part in EN_STOP:
+                continue
+            out.setdefault(_en_singular(part), EN_SUBWORD_WEIGHT)
+    return out
+
+
 def _grams(text: str) -> set:
-    """中文切 2-gram（单字 run 退化为整字），英文/数字切整词并小写"""
+    """中文切 2-gram（单字 run 退化为整字），英文/数字做词形归一后取全部形式"""
     out = set()
     for run in CJK.findall(text or ""):
         if len(run) < NGRAM:
@@ -83,7 +167,7 @@ def _grams(text: str) -> set:
         for i in range(len(run) - NGRAM + 1):
             out.add(run[i:i + NGRAM])
     for tok in ASCII_TOKEN.findall(text or ""):
-        out.add(tok.lower())
+        out.update(_en_forms(tok))
     return out
 
 
@@ -93,7 +177,24 @@ def _unigrams(text: str) -> set:
 
 
 def _ascii_words(text: str) -> set:
-    return {t.lower() for t in ASCII_TOKEN.findall(text or "")}
+    """问题里的英文形式（含复数归一与子词拆分），用于给英文命中加权"""
+    out = set()
+    for tok in ASCII_TOKEN.findall(text or ""):
+        out.update(_en_forms(tok))
+    return out
+
+
+def _en_weights(text: str) -> dict:
+    """整段文本里英文形式 → 权重（同一形式取最大）。
+
+    中文 gram 不进这张表（默认权重 1.0），保证中文路径的打分与改动前完全一致。
+    """
+    out = {}
+    for tok in ASCII_TOKEN.findall(text or ""):
+        for gram, weight in _en_forms(tok).items():
+            if weight > out.get(gram, 0.0):
+                out[gram] = weight
+    return out
 
 
 class SchemaLinker:
@@ -104,7 +205,7 @@ class SchemaLinker:
         self.embeddings = embeddings
         self.llm = llm
         self._tables = None          # list[str]
-        self._meta = None            # {table: {"columns", "samples", "grams", "unigrams", "profile"}}
+        self._meta = None            # {table: {"columns","samples","grams","unigrams","profile","gweight"}}
         self._df = None              # {gram: 出现该 gram 的表数}
         self._vec = None             # {table: [float]} 或 None（向量不可用）
         self._vec_ready = False
@@ -202,7 +303,8 @@ class SchemaLinker:
             except Exception:
                 pass
             meta[t] = {"columns": columns, "samples": self._sample_values(t),
-                       "profile": {}, "grams": set(), "unigrams": set()}
+                       "profile": {}, "grams": set(), "unigrams": set(),
+                       "gweight": {}}
         # 画像必须早于建索引：画像文本要并进每张表的关键词袋
         profiles = self._load_profile(meta)
         for t in self._tables:
@@ -211,6 +313,7 @@ class SchemaLinker:
             text = " ".join([str(t), self._profile_text(m["profile"]),
                              *[str(c) for c in m["columns"]], *m["samples"]])
             m["grams"], m["unigrams"] = _grams(text), _unigrams(text)
+            m["gweight"] = _en_weights(text)
             for g in m["grams"] | m["unigrams"]:
                 df[g] = df.get(g, 0) + 1
         self._meta, self._df = meta, df
@@ -356,7 +459,12 @@ class SchemaLinker:
             score, hits = 0.0, []
             for g in q_grams:
                 if g in m["grams"]:
-                    w = ASCII_WORD_WEIGHT if g in q_words else 1.0
+                    # 权重取「表侧」的档位：整词命中满权、CamelCase 子词半权，
+                    # 再乘上「问题侧」的英文增益。中文 gram 不在 gweight 里，
+                    # 默认 1.0 —— 中文打分与改动前逐位一致。
+                    w = m["gweight"].get(g, 1.0)
+                    if g in q_words:
+                        w *= ASCII_WORD_WEIGHT
                     idf = math.log(1 + n / self._df.get(g, 1))
                     score += w * idf
                     hits.append(g)
@@ -379,7 +487,11 @@ class SchemaLinker:
                 why.append("关键词 " + "/".join(sorted(hits)[:5]))
             if v > 0.05:
                 why.append(f"语义 +{v:.2f}")
-            scored.append((t, score, "；".join(why) or "—"))
+            if not why:
+                # 全零分时排序退化成表名字母序，此时的名次**没有任何语义**。
+                # 把这件事写进理由里，免得调用方（尤其是 LLM）把字母序当相关性。
+                why.append("无词法命中（排序退化为表名字母序，需向量检索兜底）")
+            scored.append((t, score, "；".join(why)))
 
         scored.sort(key=lambda x: (-x[1], x[0]))
         return scored[:top_k]

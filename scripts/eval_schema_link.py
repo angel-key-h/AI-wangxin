@@ -46,6 +46,15 @@ CASES = [
     ("每张专辑有多少首曲目", {"Album", "Track"}),
     ("哪个曲风最流行", {"Genre", "Track", "InvoiceLine"}),
     ("客户主要来自哪些国家", {"Customer"}),
+    # ── 英文直问（跨语言：提问语言直接换成英文库的语言）──
+    # 专门盯英文词形归一。此前 _grams() 只做整词小写，"customers" 与表名
+    # "Customer" 因单复数差异零命中 → 全表同分 → 退化成表名字母序，
+    # top1 变成 Album。这几条是那次修复的回归用例。
+    ("How many customers are there", {"Customer"}),
+    ("How many employees do we have", {"Employee"}),
+    ("How many tracks are there", {"Track"}),
+    ("List all albums", {"Album"}),
+    ("Which genres are the most popular", {"Genre", "Track", "InvoiceLine"}),
 ]
 
 
