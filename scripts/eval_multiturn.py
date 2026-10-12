@@ -12,7 +12,11 @@
 
 用法：
     python scripts/eval_multiturn.py
-退出码 0 = fixed 全通过；1 = 有项目没通过。
+退出码 0 = fixed 全通过；1 = 有项目没通过；2 = 缺少 API Key（无法评测）。
+
+注意：本脚本**本质是模型行为评测**（多轮指代消解依赖 LLM 改写问题），
+没有可离线降级的规则层。因此缺 Key 时给出可操作提示并以退出码 2 结束，
+而不是抛 RuntimeError 崩栈 —— 便于 CI / 一键脚本区分「跑挂了」和「没配 Key」。
 """
 import argparse
 import json
@@ -24,7 +28,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 REPORT_DIR = os.path.join(ROOT, "data", "eval", "reports")
 
-from agent.graph import AgentGraph  # noqa: E402
+from config import Config  # noqa: E402
 
 # 每轮：sql_has 必须全部出现在 SQL 里；sql_not 必须一个都不出现；ans_has 必须在答案里
 DIALOGUES = [
@@ -100,6 +104,16 @@ def main():
     ap.add_argument("--no-save", action="store_true", help="不落盘报告")
     args = ap.parse_args()
 
+    missing = Config.missing_keys()
+    if missing:
+        print("=" * 78)
+        print("⏭️  缺少必要的 API Key（" + "、".join(missing) + "），无法评测多轮指代消解。")
+        print("    本评测依赖 LLM 改写问题，无离线降级路径。")
+        print("    请在项目根目录 .env 中配置后重跑（模板见 .env.example）。")
+        print("=" * 78)
+        return 2
+
+    from agent.graph import AgentGraph
     agent = AgentGraph()
     summary = []
     details = []

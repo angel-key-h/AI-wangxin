@@ -16,6 +16,7 @@
 | **RAG 检索命中率** | `scripts/eval_rag.py` | `rag-20260925-111245.json` | hit@1 **84.8%** / hit@4 **95.5%** / 宽松匹配 **71.2%**（n=66） |
 | RAG 答案准确率 / 忠实度 | `scripts/eval_rag.py` | `rag-20260925-111245.md` | 答案准确率 **84.8%** / 忠实度 **98.5%**（LLM 裁判，n=66） |
 | **澄清 精确/召回/F1** | `scripts/eval_clarify.py` | `clarify-20260924-120924.json` | **100% / 100% / 100%**，误澄清率 **0%**（tp7/fp0/fn0/tn10）⚠️ 见二·1 |
+| **澄清 · 规则层（离线可复现）** | `scripts/eval_clarify.py --rule-only --save` | `clarify-20261012-235033.json`（mode=rule-only） | 规则层维度命中 **9/9 = 100%**（6 维全覆盖，n=9 正例） |
 | **Schema Linking（纯词法）** | `scripts/eval_schema_link.py --no-vector --save` | `schemalink-lexical-20261012-232503.json` | top1 **19/20 = 95.0%** / recall@6 **20/20 = 100%**（16 表） |
 | **中级难题 2 · 可扩展要素提取** | `scripts/eval_extensible_schema.py` | `extensible-20261012-232537.json` | **9/9 = 100%**（确定性检查，不消耗 LLM） |
 | **文档质量分档单调性** | `scripts/eval_doc_quality.py --save` | `docquality-20260925-111801.json` | 单调率 **0.975**；干净文档误报 **0/3** |
@@ -44,8 +45,10 @@
 1. **澄清报告是旧口径** —— `clarify-20260924-120924.json` 记录的是
    **17 条用例 / 4 个维度 / n=7**，而用例文件 `data/eval/clarify_cases.json`
    现已扩到 **19 条（P1–P9）/ 6 个维度**。后加的 P8 实体确认、P9 查询维度
-   **从未重跑**，README 里的「维度命中 9/9」目前只有规则层实测值支撑，
-   没有对应报告。→ **待重跑（需 API Key）**
+   **从未重跑**（模型层口径）。
+   → **规则层已离线补齐**：`clarify-20261012-235033.json`（`--rule-only`）
+   覆盖全部 19 条用例的规则层判定，6 维命中 9/9。模型层（F1/闭环）仍需 Key。
+   → 模型层 **待重跑（需 API Key）**。
 
 2. **多轮指代消解无报告** —— `scripts/eval_multiturn.py` 原先不落盘。
    本轮已补上默认落盘，但尚未重跑。→ **待重跑（需 API Key）**
@@ -70,6 +73,32 @@
    的识别还没分成 OCR 与 VLM 两条路径，指标结构与现在不同，不要与
    `recog-ocr-*` / `recog-vlm-*` 混比。
 
+7. **OHR-Bench 数据集不入库** —— `eval_doc_recog.py` / `eval_doc_quality.py` /
+   `eval_correction.py` 依赖 `data/ohr/OHR-Bench.parquet`（公开数据集，
+   7 领域 1261 份文档，体积大，**故意不纳入版本库**）。新克隆的仓库必然没有，
+   需自行下载放入 `data/ohr/`，或用环境变量 `OHR_DIR` 指向别处。
+   注意 `data/ohr_kb/`（195 页物化知识库）**在库内**，RAG 评测不缺数据、只缺 Key。
+
+---
+
+## 二·补：评测脚本的退出码约定
+
+上一轮起，所有 `eval_*.py` 在「没配齐环境」时**不再崩栈**，而是打印可操作提示后
+按约定退出（公共逻辑见 `scripts/_preflight.py`）：
+
+| 退出码 | 含义 | 触发条件 |
+|---|---|---|
+| 0 | 正常完成（达标与否见各脚本结论） | — |
+| 1 | 正常完成但**未达标** | 跑完了，指标没到阈值 |
+| 2 | **缺少 API Key** | 需 LLM/Embedding，配 `.env` 后重跑 |
+| 3 | **缺少外部数据集** | 缺 OHR-Bench，配 `OHR_DIR` 后重跑 |
+| 10 / 11 | **降级完成**（澄清专用）：只跑了规则层，达标 / 未达标 | 缺 Key 时 `eval_clarify` 自动降级 |
+
+这样一键脚本 / CI 能区分「代码坏了（其它非零）」与「环境没配（2/3）」，
+以及「跑的是降级版（10/11）」。
+其中 `eval_clarify.py` 支持 `--rule-only`：完全不调模型，只跑规则层对照，
+是**无 Key 环境下唯一能产出的澄清证据**（已被本索引纳入权威表）。
+
 ---
 
 ## 三、如何复现
@@ -80,16 +109,20 @@ python scripts/init_runtime.py --force
 python scripts/eval_schema_link.py --no-vector --save
 python scripts/eval_extensible_schema.py
 python scripts/eval_complexity_plan.py --no-net
+python scripts/eval_clarify.py --rule-only --save      # 规则层对照（离线）
 python scripts/verify_live.py
 python scripts/verify_app.py
 
-# 需要 API Key（写入 .env 后执行）
+# 需要 API Key（写入 .env 后执行；缺 Key 会以退出码 2 优雅退出）
 python scripts/eval_nl2sql.py --save
 python scripts/eval_rag.py --save
-python scripts/eval_clarify.py --save
+python scripts/eval_clarify.py --save                  # 模型层 F1/闭环
 python scripts/eval_multiturn.py
+python scripts/eval_schema_link.py --save              # 词法 + 向量
+python scripts/verify_search_equiv.py                  # 检索等价性（需真实调 embedding）
+
+# 需要 API Key + OHR-Bench 数据集（缺数据会以退出码 3 优雅退出）
 python scripts/eval_doc_recog.py --save
 python scripts/eval_correction.py --save
 python scripts/eval_doc_quality.py --save
-python scripts/eval_schema_link.py --save      # 词法 + 向量
 ```

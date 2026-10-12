@@ -16,7 +16,7 @@
     python scripts/eval_rag.py --limit 20      # 先小样本试跑
     python scripts/eval_rag.py --no-judge      # 只跑确定性指标，快
     python scripts/eval_rag.py --save
-退出码 0 = hit@4 ≥ 90% 且 answer_acc ≥ 90%；否则 1
+退出码 0 = hit@4 ≥ 90% 且 answer_acc ≥ 90%；否则 1；2 = 缺 API Key；3 = 缺数据集
 """
 import argparse
 import json
@@ -29,8 +29,10 @@ from datetime import datetime
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, "scripts"))
 os.chdir(ROOT)
 
+from _preflight import require_keys  # noqa: E402
 from tools.rag_tool import RAGTool  # noqa: E402
 
 CASES_PATH = os.path.join(ROOT, "data", "eval", "rag_cases.json")
@@ -135,6 +137,10 @@ def main():
     print(f"RAG 评测 · 知识库 {len([f for f in os.listdir(KB_DIR)])} 页 · "
           f"{len(cases)} 个问题 · LLM 裁判={'关' if args.no_judge else '开'}")
     print("=" * 78)
+
+    rc = require_keys("RAG 检索依赖向量模型（Embedding），问答与忠实度判定依赖 LLM。")
+    if rc:
+        return rc
 
     t0 = time.time()
     rag = RAGTool(data_dir=KB_DIR, persist_dir=PERSIST_DIR)

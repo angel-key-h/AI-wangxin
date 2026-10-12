@@ -1,0 +1,307 @@
+{
+  "mode": "rule-only",
+  "tp": 0,
+  "fp": 0,
+  "fn": 9,
+  "tn": 10,
+  "precision": 0.0,
+  "recall": 0.0,
+  "f1": 0.0,
+  "fpr": 0.0,
+  "dimensions": {
+    "controlled": [
+      "时间范围",
+      "指标",
+      "指代对象",
+      "对比对象",
+      "实体确认",
+      "查询维度"
+    ],
+    "hit": 0,
+    "n": 0,
+    "rate": 0.0,
+    "false": 0,
+    "distribution": {}
+  },
+  "rule_only": {
+    "hit": 9,
+    "n": 9,
+    "rate": 1.0,
+    "distribution": {
+      "时间范围": 2,
+      "指标": 2,
+      "指代对象": 2,
+      "对比对象": 1,
+      "实体确认": 1,
+      "查询维度": 1
+    }
+  },
+  "cases": [
+    {
+      "id": "P1",
+      "q": "增长率是多少？",
+      "expect": "clarify",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [
+        "时间范围"
+      ],
+      "answer": "",
+      "note": "缺时间范围，答出来必然是错的"
+    },
+    {
+      "id": "P2",
+      "q": "前十是谁？",
+      "expect": "clarify",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [
+        "指标"
+      ],
+      "answer": "",
+      "note": "没说是按哪个指标排的前十"
+    },
+    {
+      "id": "P3",
+      "q": "那个班有多少人？",
+      "expect": "clarify",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [
+        "指代对象"
+      ],
+      "answer": "",
+      "note": "指代对象缺失，且本轮无历史对话"
+    },
+    {
+      "id": "P4",
+      "q": "帮我看看排名",
+      "expect": "clarify",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [
+        "指标"
+      ],
+      "answer": "",
+      "note": "缺指标、缺范围"
+    },
+    {
+      "id": "P5",
+      "q": "他的成绩怎么样？",
+      "expect": "clarify",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [
+        "指代对象"
+      ],
+      "answer": "",
+      "note": "无指代对象"
+    },
+    {
+      "id": "P6",
+      "q": "同比情况如何？",
+      "expect": "clarify",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [
+        "时间范围"
+      ],
+      "answer": "",
+      "note": "缺时间范围（同比要求跨期对比却没给窗口）"
+    },
+    {
+      "id": "P7",
+      "q": "对比一下",
+      "expect": "clarify",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [
+        "对比对象"
+      ],
+      "answer": "",
+      "note": "没有对比对象"
+    },
+    {
+      "id": "P8",
+      "q": "胡子杨的智育测评分",
+      "expect": "clarify",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [
+        "实体确认"
+      ],
+      "answer": "",
+      "note": "库里是「胡子扬」。这条原先被标成负例（expect=answer），等于把错误行为固化进评测集 —— 系统当时既不纠错也不澄清，直接查 0 行后回一句『没找到』，用户无从知道自己打错了字。实体近邻是确定性信号，必须澄清"
+    },
+    {
+      "id": "P9",
+      "q": "胡子扬",
+      "expect": "clarify",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [
+        "查询维度"
+      ],
+      "answer": "",
+      "note": "**只点了名**：名字不是问题，没说想了解他的哪一方面。系统原先直接倒出整条记录，看着贴心，实则把『你想问什么』的决策丢回给用户。与 N4 的区别：N4 带了指标所以必须作答"
+    },
+    {
+      "id": "N1",
+      "q": "智育测评分前十是谁？",
+      "expect": "answer",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [],
+      "answer": "",
+      "note": "完备"
+    },
+    {
+      "id": "N2",
+      "q": "一共有多少人参评？",
+      "expect": "answer",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [],
+      "answer": "",
+      "note": "完备"
+    },
+    {
+      "id": "N3",
+      "q": "只育测评分前十是谁",
+      "expect": "answer",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [],
+      "answer": "",
+      "note": "**指标名**的错别字（智→只）：意图明确，规则须容忍，否则误报缺指标"
+    },
+    {
+      "id": "N4",
+      "q": "胡子扬的智育测评分",
+      "expect": "answer",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [],
+      "answer": "",
+      "note": "实体**拼写正确**时必须作答，不能因为『名字像某个人』就反问（实体近邻的假阳性对照）"
+    },
+    {
+      "id": "N5",
+      "q": "公司有多少员工",
+      "expect": "answer",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [],
+      "answer": "",
+      "note": "极短但完备"
+    },
+    {
+      "id": "N6",
+      "q": "北京的首都",
+      "expect": "answer",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [],
+      "answer": "",
+      "note": "无关问题，应作答/声明无资料而非澄清"
+    },
+    {
+      "id": "N7",
+      "q": "每个行政班的平均综合素质测评成绩是多少？",
+      "expect": "answer",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [],
+      "answer": "",
+      "note": "完备"
+    },
+    {
+      "id": "N8",
+      "q": "扣分最多的三个人是谁",
+      "expect": "answer",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [],
+      "answer": "",
+      "note": "有『扣分』列可依，不该反问"
+    },
+    {
+      "id": "N9",
+      "q": "学号 2025210785 的学生叫什么名字？",
+      "expect": "answer",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [],
+      "answer": "",
+      "note": "完备"
+    },
+    {
+      "id": "N10",
+      "q": "哪个国家的客户最多？",
+      "expect": "answer",
+      "did": false,
+      "missing_dimensions": [],
+      "by_rule": false,
+      "reason": "",
+      "clarification": "",
+      "rule_dims": [],
+      "answer": "",
+      "note": "完备（极值词自带依据：客户）"
+    }
+  ],
+  "closure": []
+}

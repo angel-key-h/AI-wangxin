@@ -27,6 +27,7 @@ import pyarrow.parquet as pq
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, "scripts"))
 os.chdir(ROOT)
 
 from tools.doc_quality import (  # noqa: E402
@@ -242,7 +243,14 @@ def main():
         description="文档复杂度（难题 8）与质量检测（难题 9）的离线验证")
     ap.add_argument("--save", action="store_true",
                     help="兼容项：两条证据链的报告默认就会落盘")
-    ap.parse_args()
+    args = ap.parse_args()
+
+    # part A（复杂度 vs 官方排版噪声）与 part B（质量检测 vs 合成退化）
+    # 都要从 OHR-Bench 取 gt_text 当基底，缺数据集时直接给可操作提示。
+    from _preflight import require_ohr
+    rc = require_ohr()
+    if rc:
+        return rc
 
     random.seed(SEED)
     rate_a, det_a, mean_a, plan_stats = part_a()

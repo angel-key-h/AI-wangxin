@@ -241,7 +241,8 @@ python scripts/eval_rag.py --save        # 检索命中率 / 答案准确率 / �
 python scripts/eval_multiturn.py         # 多轮指代与省略（默认落盘报告）
 
 # ── 语义澄清（难题 3）──
-python scripts/eval_clarify.py           # 维度命中 / 误报 / 规则层独立对照
+python scripts/eval_clarify.py --rule-only --save  # 规则层对照（离线，不调模型）
+python scripts/eval_clarify.py           # 模型层：维度命中 / 误报 / F1（需 Key）
 
 # ── 文档复杂度与质量（难题 8 / 9）──
 python scripts/eval_doc_quality.py --save   # 外部效度：真实文档分档 + 策略分化
@@ -260,8 +261,22 @@ python scripts/eval_extensible_schema.py # 可扩展要素提取
 # ── 全链路断言（不需要真实 API Key）──
 python scripts/verify_live.py            # 路由 / 澄清 / 纯函数不变量
 python scripts/verify_app.py             # 页面元素存在性
-python scripts/verify_search_equiv.py    # 检索优化前后等价性（含 embedding 调用计数）
+
+# ── 检索优化等价性（需 EMBEDDING_API_KEY：要统计真实 embedding 调用次数）──
+python scripts/verify_search_equiv.py    # 重排复用 query 向量 → 结果一致 + 调用降半
 ```
+
+**评测脚本的退出码约定**（缺环境时不再崩栈，而是给可操作提示后退出）：
+`0` = 完成（达标与否见脚本结论）｜`1` = 完成但未达标｜
+`2` = 缺少 API Key｜`3` = 缺少 OHR-Bench 数据集｜
+`10`/`11` = 降级完成（澄清专用：缺 Key 时只跑规则层，达标/未达标）。
+公共逻辑见 `scripts/_preflight.py`。其中 `--rule-only` 让澄清评测在**无 Key**
+时也能产出规则层证据（这是赛题「评分规则设计与实现路径」要求的可复现基线）。
+
+**注意 OHR-Bench 不入库**：`eval_doc_recog` / `eval_doc_quality` / `eval_correction`
+依赖公开数据集 `data/ohr/OHR-Bench.parquet`（体积大，故意不纳入版本库），
+新克隆仓库需自行下载，或用 `OHR_DIR` 指向别处。`data/ohr_kb/`（195 页物化知识库）
+在库内，故 RAG 评测不缺数据、只缺 Key。
 
 ### 参考结果（本机实测）
 
@@ -274,7 +289,7 @@ python scripts/verify_search_equiv.py    # 检索优化前后等价性（含 emb
 | `eval_multiturn.py` | 多轮指代消解 | baseline **3/8** → **8/8** |
 | `eval_clarify.py` | 澄清召回率 / 精确率 / F1 | **100% / 100% / 100%** |
 | `eval_clarify.py` | 维度误报数 | **0** |
-| `eval_clarify.py` | 规则层独立对照（不调 LLM） | **9/9**（维度命中）/ 误报 **0** |
+| `eval_clarify.py` | 规则层独立对照（不调 LLM，可离线复现） | **9/9**（维度命中，6 维全覆盖）/ 误报 **0** |
 | `eval_schema_link.py` | Schema Linking top1 / recall@6（纯词法） | **19/20 = 95.0%** / **20/20 = 100%** |
 | `eval_extensible_schema.py` | 可扩展要素提取（难题 2，确定性检查） | **9/9 = 100%**（不消耗 LLM） |
 | `eval_doc_quality.py` | 复杂度单调性 | **97.5%** |
@@ -304,6 +319,8 @@ python scripts/verify_search_equiv.py    # 检索优化前后等价性（含 emb
 3. **部分指标的报告早于最近的代码改动，需重跑确认。** 逐项说明：
    - `eval_clarify` 的报告生成于 **4 维 / 17 条用例**时期，而代码已扩到
      **6 维 / 19 条用例**（2026-10-11），因此上表中的澄清指标应视为**下界**；
+     规则层口径已于本轮离线补跑（`clarify-20261012-235033.json`，9/9），
+     模型层（F1 / 闭环）仍需配 Key 重跑；
    - `eval_multiturn` 此前**不落盘** —— README 引用的 8/8 在 `data/eval/reports/`
      里没有对应文件。现已在脚本内补上落盘（默认开启，`--no-save` 可关闭），
      配好 Key 重跑一次即可生成报告；
@@ -313,6 +330,9 @@ python scripts/verify_search_equiv.py    # 检索优化前后等价性（含 emb
      英文直问，用于覆盖英文词形归一），上表数字是**新评测集**上的实测值；
      扩集前的 15 条口径结果是 14/15 = 93.3%。
    - `eval_extensible_schema`（难题 2）此前只往终端打印、不落盘，现已默认落盘。
+   - `eval_doc_recog` / `eval_doc_quality` / `eval_correction` 依赖 **OHR-Bench
+     外部数据集**（不入库），新克隆仓库需先准备好 `data/ohr/` 才能重跑；
+     未就绪时脚本会以退出码 3 给出提示，不再抛 `FileNotFoundError` 崩栈。
 
 ---
 

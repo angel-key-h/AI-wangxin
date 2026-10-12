@@ -13,7 +13,7 @@
     python scripts/eval_nl2sql.py               # 全量
     python scripts/eval_nl2sql.py --tier single # 只跑某一档
     python scripts/eval_nl2sql.py --save        # 额外落盘 Markdown/JSON 报告
-退出码 0 = 准确率 ≥ 90%（评分表最高档）；1 = 未达标
+退出码 0 = 准确率 ≥ 90%（评分表最高档）；1 = 未达标；2 = 缺少 API Key（无法评测）
 """
 import argparse
 import json
@@ -28,7 +28,7 @@ sys.path.insert(0, ROOT)
 os.chdir(ROOT)
 
 from config import Config  # noqa: E402
-from agent.graph import AgentGraph  # noqa: E402
+from config import Config  # noqa: E402
 
 CASES_PATH = os.path.join(ROOT, "data", "eval", "nl2sql_cases.json")
 REPORT_DIR = os.path.join(ROOT, "data", "eval", "reports")
@@ -146,6 +146,16 @@ def main():
     print(f"数据库: {db}")
     print("=" * 78)
 
+    missing = Config.missing_keys()
+    if missing:
+        print("=" * 78)
+        print("⏭️  缺少必要的 API Key（" + "、".join(missing) + "），无法评测 NL2SQL。")
+        print("    本评测依赖 LLM 生成 SQL，无离线降级路径。")
+        print("    请在项目根目录 .env 中配置后重跑（模板见 .env.example）。")
+        print("=" * 78)
+        return 2
+
+    from agent.graph import AgentGraph
     agent = AgentGraph()
     results, t_start = [], time.time()
     for c in cases:

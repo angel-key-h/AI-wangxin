@@ -27,9 +27,11 @@ from datetime import datetime
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, "scripts"))
 os.chdir(ROOT)
 
 import pyarrow.parquet as pq  # noqa: E402
+from _preflight import require_keys, require_ohr  # noqa: E402
 from config import Config  # noqa: E402
 from tools.doc_quality import correct_text, to_simplified  # noqa: E402
 
@@ -73,6 +75,13 @@ def main():
     ap.add_argument("--tiers", default="mild,moderate")
     args = ap.parse_args()
     tiers = [f"semantic_noise_{t.strip()}" for t in args.tiers.split(",") if t.strip()]
+
+    rc = require_ohr()
+    if rc:
+        return rc
+    rc = require_keys("错别字/繁体字校正依赖 LLM 判定与改写。")
+    if rc:
+        return rc
 
     from langchain_openai import ChatOpenAI
     llm = ChatOpenAI(model=Config.LLM_MODEL, api_key=Config.LLM_API_KEY,

@@ -21,7 +21,10 @@
 用法：
     python scripts/verify_search_equiv.py
     python scripts/verify_search_equiv.py --atol 1e-9     # 分数容差
-退出码 0 = 结果等价且调用次数确实下降。
+退出码 0 = 结果等价且调用次数确实下降；2 = 缺 API Key。
+
+注意：本脚本要统计 embedding 的真实调用次数，**必须联网 且 需要 EMBEDDING_API_KEY**，
+没有离线降级路径。缺 Key 时给可操作提示并以退出码 2 退出，不抛 openai 的崩栈。
 """
 import argparse
 import os
@@ -29,8 +32,10 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, "scripts"))
 os.chdir(ROOT)
 
+from _preflight import require_keys  # noqa: E402
 from tools import rag_tool  # noqa: E402
 
 QUESTIONS = [
@@ -151,6 +156,11 @@ def main():
     print("=" * 78)
     print("重排复用 query 向量 —— 等价性验证")
     print("=" * 78)
+
+    rc = require_keys("本脚本要统计 embedding 调用次数，必须真实调用向量接口。")
+    if rc:
+        return rc
+
     tool = rag_tool.RAGTool()
     if tool.is_empty():
         print("❌ 索引为空或不可用，先用 scripts/verify_live.py 建一次索引")

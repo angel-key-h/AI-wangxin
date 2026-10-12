@@ -32,6 +32,7 @@ import pyarrow.parquet as pq
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, "scripts"))
 os.chdir(ROOT)
 
 from tools import image_tool  # noqa: E402
@@ -508,6 +509,12 @@ def main():
 
     if args.compare:
         return compare_reports()
+
+    # part A/B/C 都要从 OHR-Bench 取页面对比识别结果；缺数据集时给可操作提示。
+    from _preflight import require_ohr
+    rc = require_ohr()
+    if rc:
+        return rc
 
     if args.engine == "vlm":
         # 就地替换识别入口，让 part_a / part_b 完全不感知通道差异 ——
