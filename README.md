@@ -275,7 +275,8 @@ python scripts/verify_search_equiv.py    # 检索优化前后等价性（含 emb
 | `eval_clarify.py` | 澄清召回率 / 精确率 / F1 | **100% / 100% / 100%** |
 | `eval_clarify.py` | 维度误报数 | **0** |
 | `eval_clarify.py` | 规则层独立对照（不调 LLM） | **9/9**（维度命中）/ 误报 **0** |
-| `eval_schema_link.py` | Schema Linking top1 / recall@6（纯词法） | **14/15 = 93.3%** / **15/15 = 100%** |
+| `eval_schema_link.py` | Schema Linking top1 / recall@6（纯词法） | **19/20 = 95.0%** / **20/20 = 100%** |
+| `eval_extensible_schema.py` | 可扩展要素提取（难题 2，确定性检查） | **9/9 = 100%**（不消耗 LLM） |
 | `eval_doc_quality.py` | 复杂度单调性 | **97.5%** |
 | `eval_doc_quality.py` | 退化检出率 / 干净假阳性 | **100%** / **0/3** |
 | `eval_doc_quality.py` | 样本获得非默认策略的比例 | **29/40 = 72.5%** |
@@ -287,8 +288,10 @@ python scripts/verify_search_equiv.py    # 检索优化前后等价性（含 emb
 | `verify_search_equiv.py` | 检索结果等价性 / query 编码次数 | **8/8 完全一致** / **16 → 8 次** |
 
 > 结果 JSON 落在 `data/eval/reports/`，每次运行带时间戳，可回看历史。
+> **全部报告的分工与权威产物对照见 [`data/eval/reports/INDEX.md`](data/eval/reports/INDEX.md)**
+> —— 同族会有多份历史报告，核对数字时请以该索引为准。
 
-### 测量口径的两点说明（避免误读）
+### 测量口径的几点说明（避免误读）
 
 1. **本地 OCR 通道可逐位复现，VLM 通道有轻微波动。** 同一份 OCR 报告重跑，
    `header_acc` / `cell_recall` 与历史报告**逐位相同**；VLM 侧即使
@@ -306,6 +309,10 @@ python scripts/verify_search_equiv.py    # 检索优化前后等价性（含 emb
      配好 Key 重跑一次即可生成报告；
    - 2026-10-11 的修复把 RAG **索引版本升到 v4**（新增标题层级切块，见难题 7），
      `eval_rag` 的 hit@1 / hit@4 需在**新索引**上重跑 —— 旧数字对应旧的切块逻辑。
+   - `eval_schema_link` 的评测集于 2026-10-12 由 15 条扩到 **20 条**（新增 5 条
+     英文直问，用于覆盖英文词形归一），上表数字是**新评测集**上的实测值；
+     扩集前的 15 条口径结果是 14/15 = 93.3%。
+   - `eval_extensible_schema`（难题 2）此前只往终端打印、不落盘，现已默认落盘。
 
 ---
 
