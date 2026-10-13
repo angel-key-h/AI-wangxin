@@ -17,7 +17,7 @@
 | RAG 答案准确率 / 忠实度 | `scripts/eval_rag.py` | `rag-20260925-111245.md` | 答案准确率 **84.8%** / 忠实度 **98.5%**（LLM 裁判，n=66） |
 | **澄清 精确/召回/F1** | `scripts/eval_clarify.py` | `clarify-20260924-120924.json` | **100% / 100% / 100%**，误澄清率 **0%**（tp7/fp0/fn0/tn10）⚠️ 见二·1 |
 | **澄清 · 规则层（离线可复现）** | `scripts/eval_clarify.py --rule-only --save` | `clarify-20261012-235033.json`（mode=rule-only） | 规则层维度命中 **9/9 = 100%**（6 维全覆盖，n=9 正例） |
-| **Schema Linking（纯词法）** | `scripts/eval_schema_link.py --no-vector --save` | `schemalink-lexical-20261013-133455.json` | top1 **19/20 = 95.0%** / recall@6 **20/20 = 100%**（16 表）/ 大小写一致性 **5/5 = 100%** |
+| **Schema Linking（纯词法）** | `scripts/eval_schema_link.py --no-vector --save` | `schemalink-lexical-20261013-135500.json` | top1 **19/20 = 95.0%** / recall@6 **20/20 = 100%**（16 表）/ 大小写一致性 **5/5 = 100%** / `vector_engaged_queries` **0**（如实标注未跑向量） |
 | **中级难题 2 · 可扩展要素提取** | `scripts/eval_extensible_schema.py` | `extensible-20261012-232537.json` | **9/9 = 100%**（确定性检查，不消耗 LLM） |
 | **文档质量分档单调性** | `scripts/eval_doc_quality.py --save` | `docquality-20260925-111801.json` | 单调率 **0.975**；干净文档误报 **0/3** |
 | **表格识别（VLM 路径）** | `scripts/eval_doc_recog.py` | `recog-vlm-20260925-110736.json` | clean：cell_f1 **0.804** / 结构率 **0.917** |
@@ -61,9 +61,14 @@
    `schemalink-lexical-20261011-102209.json` 是 **15 条用例**的旧口径
    （14/15 = 93.3%）；`schemalink-lexical-20261012-232503.json` 是扩到
    **20 条**后的口径（19/20 = 95.0%）；
-   `schemalink-lexical-20261013-133455.json` 是同 20 条，但**首次附带
-   大小写一致性断言**（5/5），并修掉了样本值误命中（见下方二·8）。
+   `schemalink-lexical-20261013-135500.json` 是同 20 条，但**首次附带
+   大小写一致性断言**（5/5），并修掉了样本值误命中（见下方二·8）；
+   还带 `vector_engaged_queries` 字段，如实记录向量通道是否真的跑了
+   （本次为 `0`，故 mode 标 `lexical` 而非 `lexical+vector`，见二·9）。
    三份**不可直接比较**，引用时请连同 n 一起说。
+   另有一份同日过渡产物 `…133455.json` 已由本文件取代并移出目录
+   —— 两者只有「多一个字段」之差，属同一状态的等价重测，无信息损失；
+   其原始内容可在 commit `69d7c56` 中回溯。
    另外，词法 + 向量模式需 Embedding API Key，本轮无法执行 ——
    纯词法 95.0% 是可离线复现的下限值。
 
@@ -100,6 +105,32 @@
    评测脚本自此**内置大小写一致性断言**（对每条英文用例跑 原句/首字母大写/
    全大写 三种写法，要求 top1 完全一致），退出码把一致性一并计入。
 
+9. **三处「退出码 / 自述」不一致（2026-10-13 已修）** ——
+   都属于「报告或退出码说了与事实不符的话」，会让核对的人得出错误结论：
+   a) **`eval_schema_link.py` 向量模式静默降级还标错 mode**：
+      缺 Embedding Key 时 embedding 调用失败被静默吞掉，分数与纯词法**逐项相同**，
+      但报告被标成 `lexical+vector`（实测确实写出过
+      `schemalink-lexical+vector-20261013-135218.json`，已删除）——
+      等于交一份自述错误的证据。修法两层：①请求向量模式却缺 Key 时**开跑前**
+      以退出码 2 退出，并提示可改用 `--no-vector`；②`SchemaLinker` 新增
+      `vec_ok_count`（真正算出向量分的查询次数），报告的 `mode` 按**实测**写，
+      并带上 `vector_engaged_queries` 字段。接口欠费/报错时也会如实标 `lexical`。
+   b) **`verify_clarify_ui.py` 缺 Key 返回 1**：退出码 1 的语义是「跑完了但未达标」，
+      读日志的人会以为**界面链路坏了**，实际只是没配环境。改为走 `_preflight`，
+      以 2 退出（与 `verify_app` / `verify_live` 的降级口径一致）。
+   c) **`build_demo_kb.py` / `prepare_ohr_kb.py` 缺数据返回 1**：
+      语义应为 3（缺外部数据集）。两者还各需不同的素材文件，故
+      `_preflight.require_ohr()` 扩展出 `files` 参数，**缺哪个报哪个**
+      （`build_demo_kb` 要 `retrieval.zip`；`prepare_ohr_kb` 要
+      `retrieval.zip` + `OHR-Bench.parquet`）。默认参数不变，
+      既有 `eval_doc_recog` / `eval_doc_quality` / `eval_correction` 行为不受影响。
+   **验证**：A) `eval_schema_link.py --save`（向量，无 Key）→ 退出码 **2** 且
+   **不落盘**；B) `verify_clarify_ui.py` → **2**；C) `build_demo_kb.py` → **3**
+   （只列 `retrieval.zip`）；D) `prepare_ohr_kb.py` → **3**（列出两个文件）；
+   E) `eval_doc_recog.py --save` → **3**（默认签名未被破坏）；
+   F) `eval_schema_link.py --no-vector --save` → **0**，mode 标 `lexical`、
+   `vector_engaged_queries: 0`，top1 19/20、一致性 5/5 均不变。
+
 ---
 
 ## 二·补：评测脚本的退出码约定
@@ -112,7 +143,7 @@
 | 0 | 正常完成（达标与否见各脚本结论） | — |
 | 1 | 正常完成但**未达标** | 跑完了，指标没到阈值 |
 | 2 | **缺少 API Key** | 需 LLM/Embedding，配 `.env` 后重跑 |
-| 3 | **缺少外部数据集** | 缺 OHR-Bench，配 `OHR_DIR` 后重跑 |
+| 3 | **缺少外部数据集** | 缺 OHR-Bench（`OHR-Bench.parquet` / `retrieval.zip`），配 `OHR_DIR` 后重跑 |
 | 10 / 11 | **降级完成**（澄清专用）：只跑了规则层，达标 / 未达标 | 缺 Key 时 `eval_clarify` 自动降级 |
 
 这样一键脚本 / CI 能区分「代码坏了（其它非零）」与「环境没配（2/3）」，
@@ -139,10 +170,13 @@ python scripts/eval_nl2sql.py --save
 python scripts/eval_rag.py --save
 python scripts/eval_clarify.py --save                  # 模型层 F1/闭环
 python scripts/eval_multiturn.py
-python scripts/eval_schema_link.py --save              # 词法 + 向量
+python scripts/eval_schema_link.py --save              # 词法 + 向量（缺 Key 需改用 --no-vector）
 python scripts/verify_search_equiv.py                  # 检索等价性（需真实调 embedding）
+python scripts/verify_clarify_ui.py                    # 澄清按钮「可点且能接着答」（需真实作答）
 
-# 需要 API Key + OHR-Bench 数据集（缺数据会以退出码 3 优雅退出）
+# 需要 OHR 素材（缺数据会以退出码 3 优雅退出）
+python scripts/build_demo_kb.py                        # 物化演示知识库（需 retrieval.zip）
+python scripts/prepare_ohr_kb.py                       # 物化评测知识库（需 retrieval.zip + parquet）
 python scripts/eval_doc_recog.py --save
 python scripts/eval_correction.py --save
 python scripts/eval_doc_quality.py --save

@@ -1,6 +1,7 @@
 {
   "mode": "lexical",
   "top_k": 6,
+  "vector_engaged_queries": 0,
   "n_tables": 16,
   "n": 20,
   "top1_hit": 19,

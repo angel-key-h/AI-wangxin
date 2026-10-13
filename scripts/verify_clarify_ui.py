@@ -11,7 +11,18 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, "scripts"))   # 同目录的 _preflight
 os.chdir(ROOT)
+
+from _preflight import require_keys  # noqa: E402
+
+# 本脚本的每一条断言都依赖真实作答（触发澄清 → 点选项 → 两轮引导给出数据），
+# 缺 Key 时「智能体未就绪」会让它们全部失败。若照常返回 1，读日志的人会以为
+# **界面链路坏了**，实际只是没配环境 —— 这正是退出码约定要消除的歧义。
+# 所以这里提前以 2（缺 API Key）退出，与 verify_app / verify_live 的降级口径一致。
+_rc = require_keys("澄清交互链路需要真实调用模型，无 Key 时无法验证")
+if _rc:
+    sys.exit(_rc)
 
 from streamlit.testing.v1 import AppTest  # noqa: E402
 

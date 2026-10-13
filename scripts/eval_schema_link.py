@@ -22,10 +22,12 @@ from datetime import datetime
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, "scripts"))   # 同目录的 _preflight
 REPORT_DIR = os.path.join(ROOT, "data", "eval", "reports")
 
-from tools.schema_linker import SchemaLinker          # noqa: E402
-from tools.sql_tool import SQLTool                    # noqa: E402
+from _preflight import require_keys                      # noqa: E402
+from tools.schema_linker import SchemaLinker              # noqa: E402
+from tools.sql_tool import SQLTool                        # noqa: E402
 
 # (问题, 期望表集合)
 CASES = [
@@ -119,6 +121,16 @@ def main() -> int:
     ap.add_argument("--save", action="store_true", help="把评测结果落盘为 JSON 报告")
     args = ap.parse_args()
 
+    # 向量模式需要 Embedding Key。缺 Key 时必须**在开跑前**退出（退出码 2），
+    # 因为 embedding 调用失败会被 SchemaLinker 静默吞掉，结果与纯词法完全相同，
+    # 但报告会被标成 "lexical+vector" —— 等于交出一份自述错误的证据。
+    # 只想看可离线复现的纯词法口径，显式加 --no-vector 即可。
+    if not args.no_vector:
+        rc = require_keys("Schema Linking 的向量通道需要 Embedding API Key；"
+                          "若只想跑可离线复现的纯词法口径，请加 --no-vector")
+        if rc:
+            return rc
+
     lk = make_linker(not args.no_vector)
     tables = lk.list_tables()
     print(f"库中共 {len(tables)} 张表：{tables}")
@@ -177,16 +189,29 @@ def main() -> int:
           f" = {cons_ok / len(cons_rows) * 100:.1f}%"
           if cons_rows else "（无英文用例，跳过）")
 
+    # ── 模式按**实测**写进报告，而不是按命令行传了什么 ──
+    # 向量通道可能因为接口报错 / 额度不足而静默退化成纯词法（此时分数与纯词法
+    # 逐项相同）。若照抄 flag 标成 lexical+vector，等于交一份自述错误的证据。
+    # 判据是 SchemaLinker.vec_ok_count：真正算出向量分的查询次数。
+    vec_engaged = (not args.no_vector) and lk.vec_ok_count > 0
+    if not args.no_vector and not vec_engaged:
+        print()
+        print("⏭️  向量通道未生效（0 次成功的 embedding 调用）——")
+        print("    本次结果实为**纯词法**，报告将如实标为 lexical，不会标成 lexical+vector。")
+        print("    请检查 EMBEDDING_API_KEY / EMBEDDING_BASE_URL 后重跑。")
+    mode = "lexical+vector" if vec_engaged else "lexical"
+
     # 落盘：中级难题 4 要求提交「实现效果关键数据」，没有报告就等于没有证据。
     # 文件名带模式前缀，方便把「仅词法」与「词法+向量」两份摆在一起对比。
     if args.save:
         os.makedirs(REPORT_DIR, exist_ok=True)
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        mode = "lexical" if args.no_vector else "lexical+vector"
         path = os.path.join(REPORT_DIR, f"schemalink-{mode}-{stamp}.json")
         with open(path, "w", encoding="utf-8") as fh:
             json.dump({
                 "mode": mode, "top_k": args.top_k,
+                # 向量实际生效的查询次数：0 表示 mode 是退化的 lexical
+                "vector_engaged_queries": lk.vec_ok_count,
                 "n_tables": len(tables), "n": n,
                 "top1_hit": top1_ok, "top1_rate": top1_ok / n,
                 "recall_hit": recall_ok, "recall_rate": recall_ok / n,

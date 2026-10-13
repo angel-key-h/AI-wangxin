@@ -258,9 +258,16 @@ python scripts/eval_schema_link.py --no-vector --save   # Schema Linking（纯�
 python scripts/eval_correction.py        # 拼写纠错
 python scripts/eval_extensible_schema.py # 可扩展要素提取
 
-# ── 全链路断言（不需要真实 API Key）──
+# ── 全链路断言（不需要真实 API Key；缺 Key 时跳过依赖模型的断言）──
 python scripts/verify_live.py            # 路由 / 澄清 / 纯函数不变量
 python scripts/verify_app.py             # 页面元素存在性
+
+# ── 需 API Key：澄清按钮「可点且能接着答」的交互闭环（缺 Key 以退出码 2 退出）──
+python scripts/verify_clarify_ui.py
+
+# ── 需 OHR 素材：物化知识库（缺数据以退出码 3 退出）──
+python scripts/build_demo_kb.py          # 演示知识库（需 retrieval.zip）
+python scripts/prepare_ohr_kb.py         # 评测知识库（需 retrieval.zip + parquet）
 
 # ── 检索优化等价性（需 EMBEDDING_API_KEY：要统计真实 embedding 调用次数）──
 python scripts/verify_search_equiv.py    # 重排复用 query 向量 → 结果一致 + 调用降半
@@ -268,10 +275,16 @@ python scripts/verify_search_equiv.py    # 重排复用 query 向量 → 结果�
 
 **评测脚本的退出码约定**（缺环境时不再崩栈，而是给可操作提示后退出）：
 `0` = 完成（达标与否见脚本结论）｜`1` = 完成但未达标｜
-`2` = 缺少 API Key｜`3` = 缺少 OHR-Bench 数据集｜
+`2` = 缺少 API Key｜`3` = 缺少外部数据集（OHR-Bench / `retrieval.zip`）｜
 `10`/`11` = 降级完成（澄清专用：缺 Key 时只跑规则层，达标/未达标）。
 公共逻辑见 `scripts/_preflight.py`。其中 `--rule-only` 让澄清评测在**无 Key**
 时也能产出规则层证据（这是赛题「评分规则设计与实现路径」要求的可复现基线）。
+
+**退出码不会替你猜**：请求了需要 Key/数据的模式却缺环境时，脚本**在开跑前**就
+以 2/3 退出，不会「跑完再给个数」。典型例子是 `eval_schema_link.py` 的向量模式：
+embedding 调用失败会被静默吞掉、结果与纯词法逐项相同，若照常落盘就会把纯词法
+标成 `lexical+vector`。现在它缺 Key 直接退出 2，且报告里的 `mode` 按
+`vector_engaged_queries`（真正算出向量分的查询次数）**实测**填写。
 
 **注意 OHR-Bench 不入库**：`eval_doc_recog` / `eval_doc_quality` / `eval_correction`
 依赖公开数据集 `data/ohr/OHR-Bench.parquet`（体积大，故意不纳入版本库），
@@ -334,10 +347,17 @@ python scripts/verify_search_equiv.py    # 重排复用 query 向量 → 结果�
      导致同一句英文大小写不同选表不同（基线一致性仅 2/5）。修法见
      `data/eval/reports/INDEX.md` 二·8。**准确率 95.0% 不变**，但结论从此
      不再依赖 bug；上表新增的「大小写一致性」一栏即为该修复的回归断言。
+   - 2026-10-13 另修三处「退出码 / 自述与事实不符」（见 `INDEX.md` 二·9）：
+     `eval_schema_link` 向量模式缺 Key 时**静默降级却把报告标成
+     `lexical+vector`**（等于交一份自述错误的证据）→ 现在缺 Key 开跑前退出 2，
+     报告 `mode` 按 `vector_engaged_queries` 实测填写；`verify_clarify_ui`
+     缺 Key 返回 1（会被误读成「界面坏了」）→ 改为 2；`build_demo_kb` /
+     `prepare_ohr_kb` 缺数据返回 1 → 改为 3，并各自报出缺的是哪个素材文件。
    - `eval_extensible_schema`（难题 2）此前只往终端打印、不落盘，现已默认落盘。
    - `eval_doc_recog` / `eval_doc_quality` / `eval_correction` 依赖 **OHR-Bench
      外部数据集**（不入库），新克隆仓库需先准备好 `data/ohr/` 才能重跑；
      未就绪时脚本会以退出码 3 给出提示，不再抛 `FileNotFoundError` 崩栈。
+     `build_demo_kb` / `prepare_ohr_kb` 同理（还需 `retrieval.zip`）。
 
 ---
 

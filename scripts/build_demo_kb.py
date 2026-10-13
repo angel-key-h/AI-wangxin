@@ -25,6 +25,9 @@ import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, "scripts"))   # 同目录的 _preflight
+
+from _preflight import require_ohr  # noqa: E402
 
 # OHR-Bench 数据默认放在仓库内 data/ohr/（由 .workbuddy/download_ohr.py 下载）。
 # 如需放在别处，用环境变量 OHR_DIR 指定 —— 此前这里写死作者本机 D 盘绝对路径，
@@ -226,9 +229,11 @@ def main():
     ap.add_argument("--clean", action="store_true")
     args = ap.parse_args()
 
-    if not os.path.exists(ZIP):
-        print(f"❌ 缺少 {ZIP}")
-        return 1
+    # 缺数据时按约定退出码 3（缺外部数据集）——「没下载数据」与「脚本坏了」
+    # 必须能被 CI 区分开。素材是公开数据集，故意不入库。
+    rc = require_ohr(("retrieval.zip",))
+    if rc:
+        return rc
     os.makedirs(KB, exist_ok=True)
     if args.clean and os.path.exists(MANIFEST):
         for f in json.load(open(MANIFEST, encoding="utf-8")).get("files", []):

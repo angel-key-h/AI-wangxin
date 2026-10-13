@@ -29,6 +29,9 @@ import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, "scripts"))   # 同目录的 _preflight
+
+from _preflight import require_ohr  # noqa: E402
 
 # OHR-Bench 数据默认放在仓库内 data/ohr/；可用环境变量 OHR_DIR 覆盖。
 # （此前写死作者本机 D 盘绝对路径，换机必崩）
@@ -82,9 +85,11 @@ def load_qas():
 
 def main():
     random.seed(SEED)
-    if not os.path.exists(ZIP):
-        print(f"❌ 缺少 {ZIP}，先跑 .workbuddy/download_ohr.py")
-        return 1
+    # 本脚本同时要 retrieval.zip（取 gt 原文）与 OHR-Bench.parquet（取 QA 标注），
+    # 缺哪个就报哪个。按约定退出码 3（缺外部数据集），别让「没下数据」看起来像「脚本坏了」。
+    rc = require_ohr(("retrieval.zip", "OHR-Bench.parquet"))
+    if rc:
+        return rc
 
     print("读取 QA 标注 ...")
     qas = load_qas()

@@ -64,23 +64,31 @@ def require_keys(purpose: str = "") -> int:
     return EXIT_NO_KEY
 
 
-def require_ohr() -> int:
+def require_ohr(files=("OHR-Bench.parquet",)) -> int:
     """检查 OHR-Bench 数据集是否就位；缺则提示 OHR_DIR 用法并返回 EXIT_NO_DATA。
 
     OHR-Bench 是公开数据集，体积远大于代码，**故意不纳入版本库**。
     因此新克隆的仓库必然没有它，脚本必须能自己说清楚这一点。
+
+    files 用来指定需要哪些文件，因为不同脚本依赖的文件不同：
+      · 评测脚本（eval_doc_recog / eval_doc_quality / eval_correction）
+        读 **OHR-Bench.parquet**（默认）；
+      · 物化脚本（build_demo_kb / prepare_ohr_kb）读 **retrieval.zip**，
+        后者还要 parquet。缺哪个就报哪个，别让用户去猜。
     """
     ohr = os.environ.get("OHR_DIR") or os.path.join(_root(), "data", "ohr")
-    parquet = os.path.join(ohr, "OHR-Bench.parquet")
-    if os.path.exists(parquet):
+    missing = [f for f in files if not os.path.exists(os.path.join(ohr, f))]
+    if not missing:
         return EXIT_OK
     print(_BAR)
     print("⏭️  未找到 OHR-Bench 数据集，本评测无法执行。")
-    print(f"    期望路径：{parquet}")
+    for f in missing:
+        print(f"    缺少：{os.path.join(ohr, f)}")
     print("    OHR-Bench 是公开数据集（7 领域 1261 份文档），体积大、不入库，")
     print("    新克隆的仓库默认没有。请下载后放到 data/ohr/，或用环境变量覆盖：")
     print("      set OHR_DIR=D:\\path\\to\\ohr          (Windows)")
     print("      export OHR_DIR=/path/to/ohr          (Linux/macOS)")
-    print("    目录下需含 OHR-Bench.parquet（含 gt_text / formatting_noise_* 字段）。")
+    print("    素材包需含 retrieval.zip 与 OHR-Bench.parquet")
+    print("    （parquet 含 gt_text / formatting_noise_* 字段）。")
     print(_BAR)
     return EXIT_NO_DATA

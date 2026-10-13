@@ -266,6 +266,12 @@ class SchemaLinker:
         self._df = None              # {gram: 出现该 gram 的表数}
         self._vec = None             # {table: [float]} 或 None（向量不可用）
         self._vec_ready = False
+        # 向量通道**实际生效**的查询次数。为什么需要它：embedding 调用失败时
+        # select() 会静默退化成 vec_scores={}（结果与纯词法完全一致），
+        # 而调用方（评测脚本 / 报告落盘）只能看到「没有异常」——
+        # 于是会把一次纯词法结果标成 "lexical+vector"，产出**假证据**。
+        # 让调用方按实测计数说话，而不是按自己传了什么参数说话。
+        self.vec_ok_count = 0
 
     # ── 中文语义画像 ──
     @staticmethod
@@ -513,6 +519,10 @@ class SchemaLinker:
                 vec_scores = {t: _cosine(qv, tv) for t, tv in self._vec.items()}
             except Exception:
                 vec_scores = {}
+        # 只有真的算出向量分才算「向量通道生效」。见 __init__ 里 vec_ok_count
+        # 的说明：这一步不能省，否则报告会把纯词法结果标成 lexical+vector。
+        if vec_scores:
+            self.vec_ok_count += 1
         # 向量分必须先减基线：智谱 embedding 对「完全不相关的两段中文」余弦
         # 也有 0.4~0.5，不减基线的话每张表都能白拿 0.85 左右的分，
         # 真正的词法命中反而被淹没 —— 实测那时 top1 只有 60%。
