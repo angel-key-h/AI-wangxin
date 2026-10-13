@@ -153,6 +153,33 @@ VLM_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 > 忘记配置时页面会明确提示缺失的 Key 名（`Config.missing_keys()`），
 > 而不是抛一个看起来像「Key 过期」的 401。
 
+### 5.1 换成 DeepSeek 也是可行的（实测）
+
+实测该配置可以直接把 LLM 与 VLM 都换成 DeepSeek，**不需要百炼 key**：
+
+```ini
+LLM_API_KEY=sk-...（DeepSeek key）
+LLM_BASE_URL=https://api.deepseek.com/v1
+LLM_MODEL=deepseek-flash            # ← 必须写显式模型 id，别写别名
+
+# VLM 复用同一个 key（config.py 会从 LLM_API_KEY 兜底），无需单独申请
+VLM_BASE_URL=https://api.deepseek.com/v1
+VLM_MODEL=deepseek-flash
+```
+
+实测结论（`data/demo_table.png`）：
+
+- **LLM 通道可用**：NL2SQL 34/34、澄清 F1 100%、多轮 8/8 均在此配置上跑出；
+- **VLM 通道可用**：`deepseek-flash` 输入模态含 image，
+  `vlm_tool.recognize_table()` 能正确读出中文列名与全部数值；
+- **❗ DeepSeek 不提供 embedding**：`/v1/embeddings` 实测 **404**，所以
+  `EMBEDDING_*` **必须另找提供方**（百炼 / 智谱），不能只配 DeepSeek 就跑 RAG。
+
+> ⚠️ **别在 `LLM_MODEL` / `VLM_MODEL` 里写别名。** 实测该端点会把
+> `deepseek-chat` **静默映射**成 `deepseek-flash` —— 请求名与实际服务的模型
+> 不一致，报告里的模型名就成了错的。写显式 id（`deepseek-flash` /
+> `deepseek-v4-pro`）即可避免。
+
 ---
 
 ## 6. 目录结构
@@ -325,14 +352,22 @@ embedding 调用失败会被静默吞掉、结果与纯词法逐项相同，若�
 
 ### 参考结果（本机实测）
 
-> **模型溯源**：表中的 NL2SQL / 澄清 / 多轮三项已于 **2026-10-13 用
-> `deepseek-chat`（DeepSeek 端点，直连）重跑**并落盘，见 `data/eval/reports/`
-> 下 `nl2sql-20261013-*`、`clarify-20261013-152833.json`、
-> `multiturn-20261013-152930.json`。更早的数字出自 **qwen3-max**（阿里云百炼），
-> 两者**不是同一配置**，横向比较时请留意。
-> 之所以要专门写这一句：报告此前**不记录所用模型**，同一指标在不同模型下的值
+> **模型溯源**：表中的 NL2SQL / 澄清 / 多轮三项已于 **2026-10-13 重跑**
+> 并落盘，见 `data/eval/reports/` 下 `nl2sql-20261013-*`、
+> `clarify-20261013-152833.json`、`multiturn-20261013-152930.json`。
+> 实际服务的模型是 **`deepseek-flash`（DeepSeek-V4.1-Flash）**；
+> 更早的数字出自 **qwen3-max**（阿里云百炼），两者**不是同一配置**，
+> 横向比较时请留意。
+> 之所以要专门写这一段：报告此前**不记录所用模型**，同一指标在不同模型下的值
 > 混在一起无法区分来源。现已让评测脚本把 `env`（模型与端点）写进报告 JSON，
 > **自下一次落盘起生效**；本批报告生成于该字段加入之前，故以本段文字为准。
+>
+> ⚠️ 另一个坑：`LLM_MODEL` 里写**别名**会被静默映射 —— 实测该端点把
+> `deepseek-chat` 映射成 `deepseek-flash`，于是"报告记录的模型"与"实际服务的
+> 模型"对不上。故 `.env` 一律写**显式模型 id**。本账号可用模型仅两个：
+> `deepseek-flash`（输入含 image，可读图）与 `deepseek-v4-pro`（仅 text）。
+> 另注：**DeepSeek 不提供 embedding 服务**（`/v1/embeddings` 实测 404），
+> 向量化必须另找提供方。
 
 | 脚本 | 指标 | 结果 |
 |---|---|---|

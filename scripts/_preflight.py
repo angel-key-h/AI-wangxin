@@ -101,6 +101,11 @@ def model_provenance() -> dict:
     一起、无法区分来源 —— 例如 NL2SQL 的 34/34 究竟出自 qwen3-max 还是
     deepseek-chat，从产物里看不出来，核对的人只能猜。这与「报告 mode 标错」
     是同一类问题：产物必须如实描述自己，而不是让读者假设。
+
+    局限：这里记的是**配置里请求的模型名**，不是服务端实际返回的模型名。
+    若提供方把别名静默映射到别的模型（DeepSeek 端点会把 `deepseek-chat`
+    映射成 `deepseek-flash`），二者就会不一致。因此 .env 里请一律写**显式
+    模型 id**，不要写别名。
     """
     try:
         sys.path.insert(0, _root())

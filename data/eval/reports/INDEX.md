@@ -12,7 +12,7 @@
 
 | 指标 | 生成脚本 | 权威产物 | 实测值 |
 |---|---|---|---|
-| **NL2SQL 准确率** | `scripts/eval_nl2sql.py` | `nl2sql-20261013-152707.json` | **34/34 = 100%**（四档全满；deepseek-chat，见二·10） |
+| **NL2SQL 准确率** | `scripts/eval_nl2sql.py` | `nl2sql-20261013-152707.json` | **34/34 = 100%**（四档全满；`deepseek-flash`，见二·10） |
 | **RAG 检索命中率** | `scripts/eval_rag.py` | `rag-20260925-111245.json` | hit@1 **84.8%** / hit@4 **95.5%** / 宽松匹配 **71.2%**（n=66）⚠️ 见二·3、二·10 |
 | RAG 答案准确率 / 忠实度 | `scripts/eval_rag.py` | `rag-20260925-111245.md` | 答案准确率 **84.8%** / 忠实度 **98.5%**（LLM 裁判，n=66） |
 | **澄清 精确/召回/F1（模型层）** | `scripts/eval_clarify.py --save` | `clarify-20261013-152833.json` | **100% / 100% / 100%**，误澄清率 **0%**（tp9/fp0/fn0/tn10）；维度命中 **9/9**、维度误报 **2**（见二·10） |
@@ -150,6 +150,17 @@
    字段（`llm_model` / `llm_base_url` / `embedding_model`）；
    NL2SQL 的 .md 报告也加一行「模型」。
    **本批报告生成于该字段加入之前，故以 README「参考结果」上方的溯源段为准。**
+   ⚠️ **该字段记的是"请求的模型名"，不是"服务的模型名"**：DeepSeek 端点会把
+   别名 `deepseek-chat` 静默映射成 `deepseek-flash`（实测响应里的 `model`
+   字段即为后者的名字）。因此 `.env` 一律写**显式模型 id**。
+   本批三项评测实际由 **`deepseek-flash`（DeepSeek-V4.1-Flash）** 服务。
+   该账号可用模型仅两个：`deepseek-flash`（输入模态含 image）、`deepseek-v4-pro`。
+   另注：**DeepSeek 无 embedding 服务**（`/v1/embeddings` 实测 **404**），
+   向量化必须另找提供方 —— 这也解释了为何 embedding 走的是智谱端点。
+   → **附带解锁**：`deepseek-flash` 的输入模态含 **image**，实测
+   `vlm_tool.recognize_table('data/demo_table.png')` 能正确读出 6 个中文列名
+   与全部数值（与本地 OCR 通道结果一致）。即**多模态识别无需百炼 key**。
+   注意 `eval_doc_recog --engine vlm` 的 F1 仍缺 OHR-Bench 数据，无法重跑。
    → 顺带纠正一处**因口径变更而失真的数字**：README 原写「澄清 维度误报数 **0**」，
    该值出自 **17 条 / 4 维**的旧报告；在 **19 条 / 6 维**的现行口径下实测为 **2**
    （`clarify-20261013-152833.json` 的 `dimensions.false`）。
