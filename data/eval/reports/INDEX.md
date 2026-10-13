@@ -12,11 +12,12 @@
 
 | 指标 | 生成脚本 | 权威产物 | 实测值 |
 |---|---|---|---|
-| **NL2SQL 准确率** | `scripts/eval_nl2sql.py` | `nl2sql-20260925-105615.json` | **34/34 = 100%** |
-| **RAG 检索命中率** | `scripts/eval_rag.py` | `rag-20260925-111245.json` | hit@1 **84.8%** / hit@4 **95.5%** / 宽松匹配 **71.2%**（n=66） |
+| **NL2SQL 准确率** | `scripts/eval_nl2sql.py` | `nl2sql-20261013-152707.json` | **34/34 = 100%**（四档全满；deepseek-chat，见二·10） |
+| **RAG 检索命中率** | `scripts/eval_rag.py` | `rag-20260925-111245.json` | hit@1 **84.8%** / hit@4 **95.5%** / 宽松匹配 **71.2%**（n=66）⚠️ 见二·3、二·10 |
 | RAG 答案准确率 / 忠实度 | `scripts/eval_rag.py` | `rag-20260925-111245.md` | 答案准确率 **84.8%** / 忠实度 **98.5%**（LLM 裁判，n=66） |
-| **澄清 精确/召回/F1** | `scripts/eval_clarify.py` | `clarify-20260924-120924.json` | **100% / 100% / 100%**，误澄清率 **0%**（tp7/fp0/fn0/tn10）⚠️ 见二·1 |
-| **澄清 · 规则层（离线可复现）** | `scripts/eval_clarify.py --rule-only --save` | `clarify-20261012-235033.json`（mode=rule-only） | 规则层维度命中 **9/9 = 100%**（6 维全覆盖，n=9 正例） |
+| **澄清 精确/召回/F1（模型层）** | `scripts/eval_clarify.py --save` | `clarify-20261013-152833.json` | **100% / 100% / 100%**，误澄清率 **0%**（tp9/fp0/fn0/tn10）；维度命中 **9/9**、维度误报 **2**（见二·10） |
+| **多轮指代消解** | `scripts/eval_multiturn.py` | `multiturn-20261013-152930.json` | baseline **3/8** → fixed **8/8 = 100%** |
+| **澄清 · 规则层（离线可复现）** | `scripts/eval_clarify.py --rule-only --save` | `clarify-20261012-235033.json`（mode=rule-only） | 规则层维度命中 **9/9 = 100%**（6 维全覆盖，n=9 正例）、误报 **0** |
 | **Schema Linking（纯词法）** | `scripts/eval_schema_link.py --no-vector --save` | `schemalink-lexical-20261013-135500.json` | top1 **19/20 = 95.0%** / recall@6 **20/20 = 100%**（16 表）/ 大小写一致性 **5/5 = 100%** / `vector_engaged_queries` **0**（如实标注未跑向量） |
 | **中级难题 2 · 可扩展要素提取** | `scripts/eval_extensible_schema.py` | `extensible-20261012-232537.json` | **9/9 = 100%**（确定性检查，不消耗 LLM） |
 | **文档质量分档单调性** | `scripts/eval_doc_quality.py --save` | `docquality-20260925-111801.json` | 单调率 **0.975**；干净文档误报 **0/3** |
@@ -42,20 +43,29 @@
 以下几处的报告与**当前代码/用例**不一致，引用数字时务必注意。
 （README §8 也同步标注了这些项。）
 
-1. **澄清报告是旧口径** —— `clarify-20260924-120924.json` 记录的是
-   **17 条用例 / 4 个维度 / n=7**，而用例文件 `data/eval/clarify_cases.json`
-   现已扩到 **19 条（P1–P9）/ 6 个维度**。后加的 P8 实体确认、P9 查询维度
-   **从未重跑**（模型层口径）。
-   → **规则层已离线补齐**：`clarify-20261012-235033.json`（`--rule-only`）
-   覆盖全部 19 条用例的规则层判定，6 维命中 9/9。模型层（F1/闭环）仍需 Key。
-   → 模型层 **待重跑（需 API Key）**。
+1. **澄清报告已分两代口径，比对时务必看清** ——
+   `clarify-20260924-120924.json` 是**旧口径：17 条用例 / 4 个维度 / n=7**
+   （tp7/fp0/fn0/tn10，维度误报 0）；
+   `clarify-20261013-152833.json` 是**现行口径：19 条（P1–P9）/ 6 个维度**
+   （tp9/fp0/fn0/tn10，维度命中 9/9、**维度误报 2**）。
+   后加的 P8 实体确认、P9 查询维度已于 2026-10-13 **在模型层重跑**，
+   不再是"从未测量"的状态。两份**口径不同、不可直接比较**：
+   用例由 17 扩到 19、维度由 4 扩到 6，多报维度的机会自然变多 ——
+   旧报告的「误报 0」不构成新报告的回归。
+   → 规则层对照：`clarify-20261012-235033.json`（`--rule-only`，6 维命中 9/9、误报 0）。
 
-2. **多轮指代消解无报告** —— `scripts/eval_multiturn.py` 原先不落盘。
-   本轮已补上默认落盘，但尚未重跑。→ **待重跑（需 API Key）**
+2. **多轮指代消解已落盘** —— `scripts/eval_multiturn.py` 原先不落盘，
+   导致 README 引用的 8/8 没有产物支撑。2026-10-13 已补跑：
+   `multiturn-20261013-152930.json`，baseline 3/8 → fixed 8/8。
+   （脚本默认落盘，`--no-save` 可关闭。）
 
-3. **RAG / NL2SQL 的检索指标对应旧切块逻辑** —— `tools/rag_tool.py` 的
-   `INDEX_VERSION` 已由 3 升到 4（新增标题层级切块），旧报告的 hit@1/hit@4
-   是在旧切块上测的。→ **待重跑（需 API Key）**
+3. **NL2SQL 已在现行库上重跑；RAG 仍缺 Embedding 额度** ——
+   `tools/rag_tool.py` 的 `INDEX_VERSION` 已由 3 升到 4（新增标题层级切块），
+   旧报告的 hit@1/hit@4 是在旧切块上测的。→ 2026-10-13 实测本机
+   **Embedding 账户余额不足**（HTTP 429 / code `1113 余额不足或无可用资源包`），
+   向量索引建不起来，因此 **RAG 检索与 Schema Linking 的向量通道仍跑不了**；
+   相关脚本会退化为「跳过检索」/「仅词法」并在日志里写明原因，属设计内降级。
+   NL2SQL 不依赖 embedding，已于同日重跑：`nl2sql-20261013-152707.json`（34/34）。
 
 4. **Schema Linking 有三份报告，评测集/口径不同** ——
    `schemalink-lexical-20261011-102209.json` 是 **15 条用例**的旧口径
@@ -130,6 +140,22 @@
    E) `eval_doc_recog.py --save` → **3**（默认签名未被破坏）；
    F) `eval_schema_link.py --no-vector --save` → **0**，mode 标 `lexical`、
    `vector_engaged_queries: 0`，top1 19/20、一致性 5/5 均不变。
+
+10. **报告不记录所用模型 + 一处被它掩盖的数字口径问题（2026-10-13）** ——
+   评测报告此前**不写自己是用哪个模型跑的**，于是同一指标在不同模型下的值混在
+   一起、无法区分来源（README 表里既有 qwen3-max 时期的数字，也有新跑的数字）。
+   这与二·9 的「报告 mode 标错」是同一类缺陷：**产物应当自述运行条件**。
+   → 修法：`scripts/_preflight.py` 新增 `model_provenance()`，
+   `eval_nl2sql` / `eval_clarify` / `eval_multiturn` 的报告 JSON 增加 `env`
+   字段（`llm_model` / `llm_base_url` / `embedding_model`）；
+   NL2SQL 的 .md 报告也加一行「模型」。
+   **本批报告生成于该字段加入之前，故以 README「参考结果」上方的溯源段为准。**
+   → 顺带纠正一处**因口径变更而失真的数字**：README 原写「澄清 维度误报数 **0**」，
+   该值出自 **17 条 / 4 维**的旧报告；在 **19 条 / 6 维**的现行口径下实测为 **2**
+   （`clarify-20261013-152833.json` 的 `dimensions.false`）。
+   已把 README 该行改为 **2** 并注明两个口径，避免读者把「口径扩张」误读成「质量回退」。
+   F1 / 误澄清率不受影响（仍为 100% / 0%）。
+   → 附带清理：`eval_nl2sql.py` 有一处重复的 `from config import Config`。
 
 ---
 

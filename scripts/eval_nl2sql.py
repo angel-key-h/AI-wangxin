@@ -25,9 +25,10 @@ from datetime import datetime
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, "scripts"))   # 同目录的 _preflight
 os.chdir(ROOT)
 
-from config import Config  # noqa: E402
+from _preflight import model_provenance  # noqa: E402
 from config import Config  # noqa: E402
 
 CASES_PATH = os.path.join(ROOT, "data", "eval", "nl2sql_cases.json")
@@ -224,10 +225,12 @@ def main():
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         with open(os.path.join(REPORT_DIR, f"nl2sql-{stamp}.json"), "w", encoding="utf-8") as fh:
             json.dump({"accuracy": acc, "passed": passed, "total": total,
+                       "env": model_provenance(),
                        "results": results}, fh, ensure_ascii=False, indent=2)
         md = [f"# NL2SQL 执行准确率评测报告（{stamp}）", "",
               f"- 准确率：**{passed}/{total} = {acc*100:.1f}%**",
-              f"- 数据库：`{db}`", f"- 浮点容差：{tol}", "",
+              f"- 数据库：`{db}`", f"- 浮点容差：{tol}",
+              f"- 模型：`{Config.LLM_MODEL}` @ {Config.LLM_BASE_URL}", "",
               "| 档位 | 通过 | 占比 |", "|---|---|---|"]
         for tier in ("single", "ranking", "aggregate", "multitable"):
             sub = [r for r in results if r["tier"] == tier]

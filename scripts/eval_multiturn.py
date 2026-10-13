@@ -26,8 +26,10 @@ from datetime import datetime
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, "scripts"))   # 同目录的 _preflight
 REPORT_DIR = os.path.join(ROOT, "data", "eval", "reports")
 
+from _preflight import model_provenance  # noqa: E402
 from config import Config  # noqa: E402
 
 # 每轮：sql_has 必须全部出现在 SQL 里；sql_not 必须一个都不出现；ans_has 必须在答案里
@@ -164,6 +166,7 @@ def main():
         with open(path, "w", encoding="utf-8") as fh:
             json.dump({
                 "criterion": "赛题：具备多轮 3 分 / 连续 5 轮以上准确 5 分",
+                "env": model_provenance(),
                 "baseline_passed": base_total, "fixed_passed": fixed_total,
                 "total": fixed_all,
                 "fixed_rate": fixed_total / fixed_all if fixed_all else 0.0,

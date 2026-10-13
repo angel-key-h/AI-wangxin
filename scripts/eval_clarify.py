@@ -40,8 +40,10 @@ from datetime import datetime
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
+sys.path.insert(0, os.path.join(ROOT, "scripts"))   # 同目录的 _preflight
 os.chdir(ROOT)
 
+from _preflight import model_provenance  # noqa: E402
 from config import Config  # noqa: E402
 from agent import clarify  # noqa: E402
 
@@ -248,6 +250,7 @@ def main():
         with open(os.path.join(REPORT_DIR, f"clarify-{stamp}.json"), "w",
                   encoding="utf-8") as fh:
             json.dump({"mode": mode,
+                       "env": model_provenance(),
                        "tp": tp, "fp": fp, "fn": fn, "tn": tn,
                        "precision": prec, "recall": rec, "f1": f1, "fpr": fpr,
                        "dimensions": {"controlled": list(clarify.DIMENSIONS),

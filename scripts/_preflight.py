@@ -92,3 +92,23 @@ def require_ohr(files=("OHR-Bench.parquet",)) -> int:
     print("    （parquet 含 gt_text / formatting_noise_* 字段）。")
     print(_BAR)
     return EXIT_NO_DATA
+
+
+def model_provenance() -> dict:
+    """本次评测实际使用的模型与端点，供报告**自述运行条件**。
+
+    为什么需要：报告此前不记录模型，于是同一个指标在不同配置下测出的值混在
+    一起、无法区分来源 —— 例如 NL2SQL 的 34/34 究竟出自 qwen3-max 还是
+    deepseek-chat，从产物里看不出来，核对的人只能猜。这与「报告 mode 标错」
+    是同一类问题：产物必须如实描述自己，而不是让读者假设。
+    """
+    try:
+        sys.path.insert(0, _root())
+        from config import Config  # noqa: WPS433
+    except Exception:  # pragma: no cover - config 缺失属严重安装问题
+        return {}
+    return {
+        "llm_model": Config.LLM_MODEL,
+        "llm_base_url": Config.LLM_BASE_URL,
+        "embedding_model": Config.EMBEDDING_MODEL,
+    }
