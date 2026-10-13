@@ -291,6 +291,7 @@ python scripts/verify_search_equiv.py    # 重排复用 query 向量 → 结果�
 | `eval_clarify.py` | 维度误报数 | **0** |
 | `eval_clarify.py` | 规则层独立对照（不调 LLM，可离线复现） | **9/9**（维度命中，6 维全覆盖）/ 误报 **0** |
 | `eval_schema_link.py` | Schema Linking top1 / recall@6（纯词法） | **19/20 = 95.0%** / **20/20 = 100%** |
+| `eval_schema_link.py` | 大小写一致性（同句三种写法同 top1） | **5/5 = 100%** |
 | `eval_extensible_schema.py` | 可扩展要素提取（难题 2，确定性检查） | **9/9 = 100%**（不消耗 LLM） |
 | `eval_doc_quality.py` | 复杂度单调性 | **97.5%** |
 | `eval_doc_quality.py` | 退化检出率 / 干净假阳性 | **100%** / **0/3** |
@@ -329,6 +330,10 @@ python scripts/verify_search_equiv.py    # 重排复用 query 向量 → 结果�
    - `eval_schema_link` 的评测集于 2026-10-12 由 15 条扩到 **20 条**（新增 5 条
      英文直问，用于覆盖英文词形归一），上表数字是**新评测集**上的实测值；
      扩集前的 15 条口径结果是 14/15 = 93.3%。
+   - 2026-10-13 修掉一处**「靠漏判侥幸正确」**：样本值匹配原为大小写敏感，
+     导致同一句英文大小写不同选表不同（基线一致性仅 2/5）。修法见
+     `data/eval/reports/INDEX.md` 二·8。**准确率 95.0% 不变**，但结论从此
+     不再依赖 bug；上表新增的「大小写一致性」一栏即为该修复的回归断言。
    - `eval_extensible_schema`（难题 2）此前只往终端打印、不落盘，现已默认落盘。
    - `eval_doc_recog` / `eval_doc_quality` / `eval_correction` 依赖 **OHR-Bench
      外部数据集**（不入库），新克隆仓库需先准备好 `data/ohr/` 才能重跑；

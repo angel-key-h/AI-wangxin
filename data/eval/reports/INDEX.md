@@ -17,7 +17,7 @@
 | RAG 答案准确率 / 忠实度 | `scripts/eval_rag.py` | `rag-20260925-111245.md` | 答案准确率 **84.8%** / 忠实度 **98.5%**（LLM 裁判，n=66） |
 | **澄清 精确/召回/F1** | `scripts/eval_clarify.py` | `clarify-20260924-120924.json` | **100% / 100% / 100%**，误澄清率 **0%**（tp7/fp0/fn0/tn10）⚠️ 见二·1 |
 | **澄清 · 规则层（离线可复现）** | `scripts/eval_clarify.py --rule-only --save` | `clarify-20261012-235033.json`（mode=rule-only） | 规则层维度命中 **9/9 = 100%**（6 维全覆盖，n=9 正例） |
-| **Schema Linking（纯词法）** | `scripts/eval_schema_link.py --no-vector --save` | `schemalink-lexical-20261012-232503.json` | top1 **19/20 = 95.0%** / recall@6 **20/20 = 100%**（16 表） |
+| **Schema Linking（纯词法）** | `scripts/eval_schema_link.py --no-vector --save` | `schemalink-lexical-20261013-133455.json` | top1 **19/20 = 95.0%** / recall@6 **20/20 = 100%**（16 表）/ 大小写一致性 **5/5 = 100%** |
 | **中级难题 2 · 可扩展要素提取** | `scripts/eval_extensible_schema.py` | `extensible-20261012-232537.json` | **9/9 = 100%**（确定性检查，不消耗 LLM） |
 | **文档质量分档单调性** | `scripts/eval_doc_quality.py --save` | `docquality-20260925-111801.json` | 单调率 **0.975**；干净文档误报 **0/3** |
 | **表格识别（VLM 路径）** | `scripts/eval_doc_recog.py` | `recog-vlm-20260925-110736.json` | clean：cell_f1 **0.804** / 结构率 **0.917** |
@@ -57,11 +57,13 @@
    `INDEX_VERSION` 已由 3 升到 4（新增标题层级切块），旧报告的 hit@1/hit@4
    是在旧切块上测的。→ **待重跑（需 API Key）**
 
-4. **Schema Linking 有两份报告，评测集口径不同** ——
+4. **Schema Linking 有三份报告，评测集/口径不同** ——
    `schemalink-lexical-20261011-102209.json` 是 **15 条用例**的旧口径
    （14/15 = 93.3%）；`schemalink-lexical-20261012-232503.json` 是扩到
-   **20 条**（新增 5 条英文直问，用于覆盖英文词形归一）后的口径
-   （19/20 = 95.0%）。两者**不可直接比较**，引用时请连同 n 一起说。
+   **20 条**后的口径（19/20 = 95.0%）；
+   `schemalink-lexical-20261013-133455.json` 是同 20 条，但**首次附带
+   大小写一致性断言**（5/5），并修掉了样本值误命中（见下方二·8）。
+   三份**不可直接比较**，引用时请连同 n 一起说。
    另外，词法 + 向量模式需 Embedding API Key，本轮无法执行 ——
    纯词法 95.0% 是可离线复现的下限值。
 
@@ -78,6 +80,25 @@
    7 领域 1261 份文档，体积大，**故意不纳入版本库**）。新克隆的仓库必然没有，
    需自行下载放入 `data/ohr/`，或用环境变量 `OHR_DIR` 指向别处。
    注意 `data/ohr_kb/`（195 页物化知识库）**在库内**，RAG 评测不缺数据、只缺 Key。
+
+8. **Schema Linking 曾有一条「靠漏判侥幸正确」的用例（2026-10-13 已修）** ——
+   样本值匹配原先用 `s in question` 做**大小写敏感**的子串判断，导致：
+   - 同一句话 `How many employees ...` 写成小写 vs 大写，会选出**不同的表**；
+   - 小写那次之所以 top1 正确，只是因为漏判了 finance 表的样本值 `"Employees"`
+     —— 那是该表列名 `Employee Breakdown by Region` 的**复述（列头式标签）**，
+     不是实体。换句话说，这一条是"靠 bug 侥幸答对"。
+   修法（`tools/schema_linker.py`）三条，逐条实测：
+   a) 样本值匹配改 `casefold`，与英文词形归一口径对齐；
+   b) 新增 `_sample_is_entity()`：含中文 ≥2 字、纯拉丁 ≥4 字、纯数字不算实体
+      （挡 `Invoice` 表样本值 `"MA"` 撞上英文 `how many` 的误命中）；
+   c) 样本值若落在**本表自己的 schema 词**里则不计命中（修 finance 表那条）。
+   另加一个**刻意取小值**的表名加成 `TABLE_NAME_GAIN=0.5`，只用于打断
+   Employee 与 finance 的平局（避免靠表名字母序分先后），给足会弄坏
+   「Artist 3 的专辑」这类"表名只是筛选条件"的题。
+   **验证**：中文 15 条排名 0 变化、Q 类（筛选句式）0 变化、T 类 0 变化、
+   留出集 14/15 → 15/15、大小写一致性 2/5 → **5/5**，准确率 19/20 不变。
+   评测脚本自此**内置大小写一致性断言**（对每条英文用例跑 原句/首字母大写/
+   全大写 三种写法，要求 top1 完全一致），退出码把一致性一并计入。
 
 ---
 

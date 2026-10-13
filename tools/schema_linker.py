@@ -48,6 +48,25 @@ SAMPLE_ROWS = 5           # 每张表取几行样本值
 MAX_SAMPLES = 60          # 每张表最多保留多少个样本值
 MAX_SAMPLE_LEN = 24       # 过长的值（大段文本）不参与匹配
 SAMPLE_HIT_GAIN = 8.0     # 样本值命中问题的权重（强信号：说明问的就是这张表里的实体）
+
+# 样本值的「像实体」判据（分语言，见 _sample_is_entity）。
+# 纯拉丁样本要求更长是为了挡缩写误命中：Invoice 表的样本值里有 "MA"（州名缩写），
+# 而英文问句 "how many ..." 恰好含子串 "ma"，于是给 Invoice 白送 +8.0。
+# 中文不能照搬这个下限：中文人名多为 2~3 字（如「胡子扬」只有 3 字），
+# 用 4 会把整张综测表的实体匹配全部废掉。故中文下限取 2。
+SAMPLE_CJK_MIN_LEN = 2    # 含中文的样本：≥2 字即视为实体（中文人名 2~3 字）
+SAMPLE_LATIN_MIN_LEN = 4  # 纯拉丁样本：≥4 才视为实体（挡 MA/AB/CA 之类缩写）
+
+# 表名命中问题的加成。**刻意取小值**，只用于「打断平局」而不用来主导排序。
+# 动机：修复后 Employee 表与 finance 表会打成同分（两边都只靠关键词 employee），
+# 靠表名字母序分先后是**脆弱**的（若将来有表叫 "A_employee" 就会被抢走）。
+# 给点名表名的表一点显式优势，结果就与命名无关了。
+# 为何不能取大：问题里出现表名**不等于**它就是目标表 ——
+# 「Artist 3 的专辑」要的是 Album 表，若表名加成给足（实测 ≥0.8），Artist 会被
+# 抬到第一，把正确的 Album 挤掉。实测 0.5 是安全上限内的取值：
+# 既让 Employee(4.89) 稳胜 finance(4.39)，又不动其他表的相对次序。
+TABLE_NAME_GAIN = 0.5
+
 UNIGRAM_WEIGHT = 0.4      # 单字权重。必须有单字这路：「各班平均分」的「班」
                           # 只能命中列名「行政班」，2-gram 根本切不出来。
                           # 权重压低 + IDF 兜底，避免「的/是/分」这类字乱打分。
@@ -184,6 +203,44 @@ def _ascii_words(text: str) -> set:
     return out
 
 
+def _sample_is_entity(s: str) -> bool:
+    """样本值是否「像实体名」—— 决定它能否触发 SAMPLE_HIT_GAIN。
+
+    样本值命中是强信号（+8），但它对**样本存了什么**很敏感：一张表如果恰好把
+    列头式的短标签也当样本存下来（如 finance 表存了 "Employees"），就会白拿加成。
+    所以只放行「像实体」的样本：
+
+      · 含中文 → ≥2 字即可（中文人名 2~3 字，如「胡子扬」；不能用 4）
+      · 纯拉丁 → ≥4 字（挡 "MA"、"AB" 这类会误撞英文功能词的缩写）
+      · 纯数字 / 纯符号 → 不算实体（"1"、"90.7" 出现在问题里不代表问这张表）
+
+    注意这是**样本值**的判据，不是公式化的字符分类：`isalpha()` 对中日韩
+    表意文字返回 True，故中文侧要显式判 CJK 区段，不能用 isalpha 一刀切。
+    """
+    s = (s or "").strip()
+    if len(s) < 2:
+        return False
+    if any("\u4e00" <= c <= "\u9fff" for c in s):      # CJK 统一表意文字
+        return len(s) >= SAMPLE_CJK_MIN_LEN
+    if any(c.isascii() and c.isalpha() for c in s):    # 含拉丁字母
+        return len(s) >= SAMPLE_LATIN_MIN_LEN
+    return False                                        # 纯数字/符号：不算实体
+
+
+def _forms_of(text: str) -> set:
+    """一段文本的归一形式集合（英文走复数还原 + 子词拆分，中文原样）。
+
+    用于「样本值是不是本表 schema 词」的判定：两边都过同一个归一化，
+    才能让 "Employees"（样本值）与 "Employee Breakdown by Region"（列名）
+    在 `employee` 这个形式上相遇。
+    """
+    if not text:
+        return set()
+    if text.isascii():
+        return set(_en_forms(text))
+    return {text.strip()}
+
+
 def _en_weights(text: str) -> dict:
     """整段文本里英文形式 → 权重（同一形式取最大）。
 
@@ -310,6 +367,17 @@ class SchemaLinker:
         for t in self._tables:
             m = meta[t]
             m["profile"] = profiles.get(t) or {}
+            # 本表 schema 词（表名 + 列名）的归一形式集合。用途见 select()：
+            # 样本值若本身就落在这些形式里，说明它只是 schema 词的复述
+            # （如 finance 表的样本值 "Employees" 复述了列名 "Employee Breakdown…"），
+            # 属于「列头式标签」而非某行数据，不构成实体命中。
+            schema_forms = _forms_of(t if t.isascii() else t)
+            for c in m["columns"]:
+                schema_forms |= _forms_of(str(c))
+            m["schema_forms"] = schema_forms
+            # 表名的归一形式（英文走复数还原 + CamelCase 拆子词，中文原样），
+            # 供 select() 判断「问题是否点名了这张表」—— 见 TABLE_NAME_GAIN。
+            m["name_forms"] = _forms_of(t)
             text = " ".join([str(t), self._profile_text(m["profile"]),
                              *[str(c) for c in m["columns"]], *m["samples"]])
             m["grams"], m["unigrams"] = _grams(text), _unigrams(text)
@@ -431,6 +499,7 @@ class SchemaLinker:
         q_grams = _grams(question)
         q_uni = _unigrams(question)
         q_words = _ascii_words(question)
+        q_lower = question.casefold()   # 样本值匹配用（大小写无关）
         if not q_grams and not q_uni:
             return [(t, 0.0, "无可用关键词") for t in self._tables[:top_k]]
 
@@ -473,14 +542,37 @@ class SchemaLinker:
                     idf = math.log(1 + n / self._df.get(c, 1))
                     score += UNIGRAM_WEIGHT * idf
                     hits.append(c)
-            # 样本值出现在问题里 —— 说明问的就是这张表里的实体，强信号
-            sample_hit = [s for s in m["samples"] if len(s) >= 2 and s in question]
+            # ── 表名命中：给一点显式优势（见 TABLE_NAME_GAIN，刻意取小值）──
+            name_hit = [nm for nm in m["name_forms"] if nm and nm in q_words]
+            if name_hit:
+                score += TABLE_NAME_GAIN
+            # ── 样本值命中：说明问题提到了这张表里的实体，强信号 ──
+            # 三条前置（缺一都会引入误判，逐条都有实测依据）：
+            #   1) 必须**大小写无关**：否则同一句写成 "How many Employees" 与
+            #      "How many employees" 给出不同候选表 —— 同义问题不同答案；
+            #   2) 样本要「像实体」：挡掉 "MA" 这类撞上英文功能词的短缩写、
+            #      以及纯数字（见 _sample_is_entity）；
+            #   3) 样本不能是本表自己的 schema 词：finance 表把行标签 "Employees"
+            #      当样本存下来（该表列名是 "Employee Breakdown by Region"），
+            #      它只是列头的复述，不是实体，却靠 +8 压过表名就叫 Employee 的表。
+            #      实测：加这条之前，"Employees list please" 会错选 finance 表。
+            sample_hit = []
+            for s in m["samples"]:
+                if not _sample_is_entity(s):
+                    continue
+                if s.casefold() not in q_lower:
+                    continue
+                if _forms_of(s) & m["schema_forms"]:
+                    continue
+                sample_hit.append(s)
             if sample_hit:
                 score += SAMPLE_HIT_GAIN * min(len(sample_hit), 3)
             v = vec_scores.get(t, 0.0) - baseline
             score += VEC_GAIN * v
 
             why = []
+            if name_hit:
+                why.append(f"表名命中 {'/'.join(sorted(set(name_hit))[:2])}")
             if sample_hit:
                 why.append(f"样本值命中 {'/'.join(sample_hit[:2])}")
             if hits:

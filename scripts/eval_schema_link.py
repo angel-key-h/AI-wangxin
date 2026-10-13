@@ -57,6 +57,17 @@ CASES = [
     ("Which genres are the most popular", {"Genre", "Track", "InvoiceLine"}),
 ]
 
+# 大小写一致性断言（与上面的准确率**分开报**，不混进 top1 命中率的口径）。
+#
+# 为什么需要单独一节：样本值匹配曾用 `s in question` 做**大小写敏感**的子串判断，
+# 于是 "How many employees do we have"（小写）与 "How many Employees do we have"
+# （首字母大写）会选出不同的表 —— 同义问题不同答案。而且小写那次之所以"对"，
+# 只是因为漏判了 finance 表的样本值 "Employees"（它是列名的复述，不是实体），
+# 并非推理正确。这类"靠漏判侥幸答对"必须能被断言挡住，否则下次静默复发。
+#
+# 断言内容：把每条英文用例变换大小写后重跑，top1 必须与原始写法**完全一致**。
+CONSISTENCY_CASES = [q for q, _ in CASES if q.isascii()]
+
 
 def make_linker(use_vector: bool) -> SchemaLinker:
     """构建 SchemaLinker。
@@ -143,6 +154,29 @@ def main() -> int:
     print(f"top1 命中率  {top1_ok}/{n} = {top1_ok / n * 100:.1f}%")
     print(f"recall@{args.top_k}  {recall_ok}/{n} = {recall_ok / n * 100:.1f}%")
 
+    # ── 大小写一致性断言（独立一节，不并入上面的命中率）──
+    print()
+    print("=" * 74)
+    print("大小写一致性断言（同一句的三种写法必须给出同一个 top1）")
+    print("=" * 74)
+    cons_rows, cons_ok = [], 0
+    for q in CONSISTENCY_CASES:
+        variants = {"原句": q, "首字母大写": q.title(), "全大写": q.upper()}
+        tops = {k: ([r[0] for r in lk.select(v, top_k=args.top_k)][:1] or [None])[0]
+                for k, v in variants.items()}
+        same = len(set(tops.values())) == 1
+        cons_ok += same
+        cons_rows.append({"q": q, "tops": tops, "consistent": same})
+        if args.verbose or not same:
+            mark = "✅" if same else "❌"
+            print(f"{mark} {q}")
+            if not same:
+                for k, v in tops.items():
+                    print(f"      {k:6s} → {v}")
+    print(f"一致率  {cons_ok}/{len(cons_rows)}"
+          f" = {cons_ok / len(cons_rows) * 100:.1f}%"
+          if cons_rows else "（无英文用例，跳过）")
+
     # 落盘：中级难题 4 要求提交「实现效果关键数据」，没有报告就等于没有证据。
     # 文件名带模式前缀，方便把「仅词法」与「词法+向量」两份摆在一起对比。
     if args.save:
@@ -156,11 +190,20 @@ def main() -> int:
                 "n_tables": len(tables), "n": n,
                 "top1_hit": top1_ok, "top1_rate": top1_ok / n,
                 "recall_hit": recall_ok, "recall_rate": recall_ok / n,
+                "consistency": {
+                    "n": len(cons_rows), "ok": cons_ok,
+                    "rate": (cons_ok / len(cons_rows)) if cons_rows else None,
+                    "cases": cons_rows,
+                },
                 "cases": results,
             }, fh, ensure_ascii=False, indent=2)
         print(f"\n报告已落盘：{path}")
 
-    return 0 if top1_ok / n >= 0.9 else 1
+    # 退出码：准确率与一致性**都**要过关，否则任一项退化都算失败。
+    # 这里用 0/1 表达，方便 CI 判断；一致性用 len(cons_rows) 为 0 时跳过。
+    acc_ok = top1_ok / n >= 0.9
+    cons_all_ok = (not cons_rows) or cons_ok == len(cons_rows)
+    return 0 if (acc_ok and cons_all_ok) else 1
 
 
 if __name__ == "__main__":
