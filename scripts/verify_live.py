@@ -55,6 +55,11 @@ from config import Config  # noqa: E402
 # 而不是抛异常终止整个脚本 —— 本脚本的价值恰恰在于「不花接口也能自查
 # 图结构 / 热重载 / 纯函数」，不该被一次缺 Key 全部废掉。
 _missing_keys = Config.missing_keys()
+# 「Key 存在但通道不可用」也要单独判：欠费（402）/ 持续限流时，意图识别必然失败，
+# 第 3 节的「片段 > 0」断言同样物理上不可能成立。若不区分，一次外部抖动就会
+# 被显示成「代码坏了」，真正的回归反而被淹没 —— 正是本节开头要避免的情况。
+# 置为 True 时脚本以退出码 2（通道不可用）结束，而不是 1（断言失败）。
+_api_down = False
 if _missing_keys:
     print(f"⏭️  缺少 API Key（{'、'.join(_missing_keys)}），跳过第 3、4 节端到端断言。")
     print("    在项目根目录配好 .env 后重跑，即可覆盖这两节。")
@@ -79,16 +84,29 @@ else:
         ("公司有多少员工", "sql"),
         ("Differential Geometry 讲了什么", "rag"),
     ]
+    _api_skipped = []
     for q, want_intent in CASES:
         state = agent.run(q, "verify-live")
         chunks = state.get("retrieved_chunks") or []
         got = state.get("intent")
+        # 意图识别调用了真实模型。trace 里出现失败标记 = 通道不可用，
+        # 这条既不该报红、也不该当成「意图识别错了」。
+        _trace_i = " ".join(state.get("trace") or [])
+        if "APIStatusError" in _trace_i or "调用失败" in _trace_i:
+            _api_down = True
+            _api_skipped.append(q)
+            continue
         if rag_ok:
             check(f"{q} → intent={got} 片段={len(chunks)}", len(chunks) > 0)
         else:
             ok = (want_intent is None) or (got == want_intent)
             check(f"{q} → intent={got}（片段断言已跳过）", ok,
                   "" if ok else f"期望 intent={want_intent}")
+    if _api_skipped:
+        print(f"⏭️  LLM 通道调用失败，第 3 节端到端断言跳过 {len(_api_skipped)}/{len(CASES)} 条："
+              f"{_api_skipped}")
+        print("    这是**环境状态**（Key 存在但欠费 402 / 持续限流），不是代码回归；")
+        print("    本脚本将以退出码 2（通道不可用）结束，而不是 1（断言失败）。")
 
     print()
     print("=" * 62)
@@ -146,5 +164,11 @@ print("=" * 62)
 if FAIL:
     print(f"❌ 未通过 {len(FAIL)} 项：" + "、".join(FAIL))
     sys.exit(1)
+if _api_down:
+    # 本地断言全过，只是外部通道不可用，有断言没跑成 —— 不能报 0（"全部通过"
+    # 会让人以为端到端也验过了），也不该报 1（那是"代码坏了"的语义）。
+    print("⚠️  本地断言全部通过；但 LLM 通道不可用，第 3 节部分端到端断言**未执行**。")
+    print("    退出码 2：恢复额度/凭据后重跑可覆盖这些断言。")
+    sys.exit(2)
 print("✅ 全部通过")
 sys.exit(0)

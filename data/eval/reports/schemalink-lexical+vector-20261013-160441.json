@@ -1,0 +1,839 @@
+{
+  "mode": "lexical+vector",
+  "top_k": 6,
+  "vector_engaged_queries": 35,
+  "env": {
+    "llm_model": "deepseek-flash",
+    "llm_base_url": "https://api.deepseek.com/v1",
+    "embedding_model": "embedding-3"
+  },
+  "n_tables": 16,
+  "n": 20,
+  "top1_hit": 20,
+  "top1_rate": 1.0,
+  "recall_hit": 20,
+  "recall_rate": 1.0,
+  "consistency": {
+    "n": 5,
+    "ok": 5,
+    "rate": 1.0,
+    "cases": [
+      {
+        "q": "How many customers are there",
+        "tops": {
+          "原句": "Customer",
+          "首字母大写": "Customer",
+          "全大写": "Customer"
+        },
+        "consistent": true
+      },
+      {
+        "q": "How many employees do we have",
+        "tops": {
+          "原句": "Employee",
+          "首字母大写": "Employee",
+          "全大写": "Employee"
+        },
+        "consistent": true
+      },
+      {
+        "q": "How many tracks are there",
+        "tops": {
+          "原句": "Track",
+          "首字母大写": "Track",
+          "全大写": "Track"
+        },
+        "consistent": true
+      },
+      {
+        "q": "List all albums",
+        "tops": {
+          "原句": "Album",
+          "首字母大写": "Album",
+          "全大写": "Album"
+        },
+        "consistent": true
+      },
+      {
+        "q": "Which genres are the most popular",
+        "tops": {
+          "原句": "Genre",
+          "首字母大写": "Genre",
+          "全大写": "Genre"
+        },
+        "consistent": true
+      }
+    ]
+  },
+  "cases": [
+    {
+      "q": "智育前十是谁",
+      "expect": [
+        "综合素质测评情况"
+      ],
+      "got": [
+        "综合素质测评情况",
+        "finance_JPMORGAN_2023Q2_10Q",
+        "Artist",
+        "finance_JPMORGAN_2022_10K_page0",
+        "Customer",
+        "finance_JPMORGAN_2022_10K_page3"
+      ],
+      "top1": true,
+      "recall": true,
+      "top_rank": [
+        {
+          "table": "综合素质测评情况",
+          "score": 10.612,
+          "why": "关键词 智/智育/育；语义 +0.18"
+        },
+        {
+          "table": "finance_JPMORGAN_2023Q2_10Q",
+          "score": 1.359,
+          "why": "无词法命中（排序退化为表名字母序，需向量检索兜底）"
+        },
+        {
+          "table": "Artist",
+          "score": 0.747,
+          "why": "无词法命中（排序退化为表名字母序，需向量检索兜底）"
+        },
+        {
+          "table": "finance_JPMORGAN_2022_10K_page0",
+          "score": 0.283,
+          "why": "无词法命中（排序退化为表名字母序，需向量检索兜底）"
+        }
+      ]
+    },
+    {
+      "q": "各班平均分是多少",
+      "expect": [
+        "综合素质测评情况"
+      ],
+      "got": [
+        "综合素质测评情况",
+        "finance_JPMORGAN_2023Q2_10Q",
+        "finance_JPMORGAN_2022_10K_page3",
+        "finance_JPMORGAN_2022_10K_page0",
+        "PlaylistTrack",
+        "Track"
+      ],
+      "top1": true,
+      "recall": true,
+      "top_rank": [
+        {
+          "table": "综合素质测评情况",
+          "score": 6.366,
+          "why": "关键词 分/班；语义 +0.15"
+        },
+        {
+          "table": "finance_JPMORGAN_2023Q2_10Q",
+          "score": 2.095,
+          "why": "语义 +0.07"
+        },
+        {
+          "table": "finance_JPMORGAN_2022_10K_page3",
+          "score": 1.447,
+          "why": "关键词 分"
+        },
+        {
+          "table": "finance_JPMORGAN_2022_10K_page0",
+          "score": 0.976,
+          "why": "无词法命中（排序退化为表名字母序，需向量检索兜底）"
+        }
+      ]
+    },
+    {
+      "q": "有多少人参评",
+      "expect": [
+        "综合素质测评情况"
+      ],
+      "got": [
+        "综合素质测评情况",
+        "Employee",
+        "finance_JPMORGAN_2022_10K_page3",
+        "Artist",
+        "Customer",
+        "finance_JPMORGAN_2023Q2_10Q"
+      ],
+      "top1": true,
+      "recall": true,
+      "top_rank": [
+        {
+          "table": "综合素质测评情况",
+          "score": 8.608,
+          "why": "关键词 人/参/参评/评；语义 +0.10"
+        },
+        {
+          "table": "Employee",
+          "score": 1.643,
+          "why": "关键词 人"
+        },
+        {
+          "table": "finance_JPMORGAN_2022_10K_page3",
+          "score": 1.447,
+          "why": "关键词 人"
+        },
+        {
+          "table": "Artist",
+          "score": 1.209,
+          "why": "关键词 人"
+        }
+      ]
+    },
+    {
+      "q": "综测排名第一的是谁",
+      "expect": [
+        "综合素质测评情况"
+      ],
+      "got": [
+        "综合素质测评情况",
+        "finance_JPMORGAN_2023Q2_10Q",
+        "Customer",
+        "Artist",
+        "Playlist",
+        "finance_JPMORGAN_2022_10K_page0"
+      ],
+      "top1": true,
+      "recall": true,
+      "top_rank": [
+        {
+          "table": "综合素质测评情况",
+          "score": 17.281,
+          "why": "关键词 名/排/排名/测/综；语义 +0.26"
+        },
+        {
+          "table": "finance_JPMORGAN_2023Q2_10Q",
+          "score": 5.276,
+          "why": "关键词 第/第一"
+        },
+        {
+          "table": "Customer",
+          "score": 1.062,
+          "why": "关键词 名"
+        },
+        {
+          "table": "Artist",
+          "score": 0.814,
+          "why": "关键词 名"
+        }
+      ]
+    },
+    {
+      "q": "胡子扬的智育测评分是多少",
+      "expect": [
+        "综合素质测评情况"
+      ],
+      "got": [
+        "综合素质测评情况",
+        "finance_JPMORGAN_2023Q2_10Q",
+        "Employee",
+        "Customer",
+        "finance_JPMORGAN_2022_10K_page3",
+        "finance_JPMORGAN_2022_10K_page0"
+      ],
+      "top1": true,
+      "recall": true,
+      "top_rank": [
+        {
+          "table": "综合素质测评情况",
+          "score": 40.598,
+          "why": "样本值命中 胡子扬；关键词 分/子/子扬/扬/智；语义 +0.24"
+        },
+        {
+          "table": "finance_JPMORGAN_2023Q2_10Q",
+          "score": 2.361,
+          "why": "语义 +0.08"
+        },
+        {
+          "table": "Employee",
+          "score": 0.776,
+          "why": "关键词 子"
+        },
+        {
+          "table": "Customer",
+          "score": 0.738,
+          "why": "关键词 子"
+        }
+      ]
+    },
+    {
+      "q": "行政班 2112506 有多少人",
+      "expect": [
+        "综合素质测评情况"
+      ],
+      "got": [
+        "综合素质测评情况",
+        "Employee",
+        "finance_JPMORGAN_2022_10K_page3",
+        "Customer",
+        "Artist",
+        "finance_JPMORGAN_2022_10K_page0"
+      ],
+      "top1": true,
+      "recall": true,
+      "top_rank": [
+        {
+          "table": "综合素质测评情况",
+          "score": 17.437,
+          "why": "关键词 2112506/人/政/政班/班；语义 +0.08"
+        },
+        {
+          "table": "Employee",
+          "score": 4.195,
+          "why": "关键词 人/政；语义 +0.10"
+        },
+        {
+          "table": "finance_JPMORGAN_2022_10K_page3",
+          "score": 3.133,
+          "why": "关键词 人；语义 +0.09"
+        },
+        {
+          "table": "Customer",
+          "score": 1.963,
+          "why": "关键词 政"
+        }
+      ]
+    },
+    {
+      "q": "综合素质测评成绩最高的人",
+      "expect": [
+        "综合素质测评情况"
+      ],
+      "got": [
+        "综合素质测评情况",
+        "finance_JPMORGAN_2023Q2_10Q",
+        "Employee",
+        "Artist",
+        "finance_JPMORGAN_2022_10K_page3",
+        "Customer"
+      ],
+      "top1": true,
+      "recall": true,
+      "top_rank": [
+        {
+          "table": "综合素质测评情况",
+          "score": 39.469,
+          "why": "关键词 人/合/合素/成/成绩；语义 +0.33"
+        },
+        {
+          "table": "finance_JPMORGAN_2023Q2_10Q",
+          "score": 1.732,
+          "why": "语义 +0.06"
+        },
+        {
+          "table": "Employee",
+          "score": 1.416,
+          "why": "关键词 人"
+        },
+        {
+          "table": "Artist",
+          "score": 1.115,
+          "why": "关键词 人"
+        }
+      ]
+    },
+    {
+      "q": "德育测评分排名第 3 的是谁",
+      "expect": [
+        "综合素质测评情况"
+      ],
+      "got": [
+        "综合素质测评情况",
+        "Artist",
+        "Employee",
+        "finance_JPMORGAN_2023Q2_10Q",
+        "Track",
+        "Playlist"
+      ],
+      "top1": true,
+      "recall": true,
+      "top_rank": [
+        {
+          "table": "综合素质测评情况",
+          "score": 33.762,
+          "why": "关键词 3/分/分排/名/德；语义 +0.27"
+        },
+        {
+          "table": "Artist",
+          "score": 3.231,
+          "why": "关键词 3/名"
+        },
+        {
+          "table": "Employee",
+          "score": 2.334,
+          "why": "关键词 3/名"
+        },
+        {
+          "table": "finance_JPMORGAN_2023Q2_10Q",
+          "score": 2.301,
+          "why": "关键词 第"
+        }
+      ]
+    },
+    {
+      "q": "哪个歌手拥有的专辑最多",
+      "expect": [
+        "Album",
+        "Artist"
+      ],
+      "got": [
+        "Album",
+        "Artist",
+        "Track",
+        "Playlist",
+        "PlaylistTrack",
+        "Genre"
+      ],
+      "top1": true,
+      "recall": true,
+      "top_rank": [
+        {
+          "table": "Album",
+          "score": 12.254,
+          "why": "关键词 专/专辑/手/歌/歌手；语义 +0.17"
+        },
+        {
+          "table": "Artist",
+          "score": 8.505,
+          "why": "关键词 手/歌/歌手；语义 +0.17"
+        },
+        {
+          "table": "Track",
+          "score": 6.41,
+          "why": "关键词 专/专辑/歌/辑；语义 +0.07"
+        },
+        {
+          "table": "Playlist",
+          "score": 2.225,
+          "why": "关键词 歌；语义 +0.06"
+        }
+      ]
+    },
+    {
+      "q": "销售额最高的客户是谁",
+      "expect": [
+        "Customer",
+        "Invoice",
+        "InvoiceLine"
+      ],
+      "got": [
+        "Invoice",
+        "Customer",
+        "InvoiceLine",
+        "finance_JPMORGAN_2023Q2_10Q",
+        "Employee",
+        "Artist"
+      ],
+      "top1": true,
+      "recall": true,
+      "top_rank": [
+        {
+          "table": "Invoice",
+          "score": 11.409,
+          "why": "关键词 售/客/客户/户/销；语义 +0.08"
+        },
+        {
+          "table": "Customer",
+          "score": 8.419,
+          "why": "关键词 客/客户/户；语义 +0.15"
+        },
+        {
+          "table": "InvoiceLine",
+          "score": 5.536,
+          "why": "关键词 售/销/销售；语义 +0.05"
+        },
+        {
+          "table": "finance_JPMORGAN_2023Q2_10Q",
+          "score": 1.721,
+          "why": "语义 +0.06"
+        }
+      ]
+    },
+    {
+      "q": "公司有多少员工",
+      "expect": [
+        "Employee"
+      ],
+      "got": [
+        "Employee",
+        "finance_JPMORGAN_2022_10K_page3",
+        "Customer",
+        "law_ArmstrongFlooringInc_20190107_8K_EX1",
+        "finance_JPMORGAN_2023Q2_10Q",
+        "finance_JPMORGAN_2022_10K_page0"
+      ],
+      "top1": true,
+      "recall": true,
+      "top_rank": [
+        {
+          "table": "Employee",
+          "score": 9.507,
+          "why": "关键词 员/员工/工；语义 +0.19"
+        },
+        {
+          "table": "finance_JPMORGAN_2022_10K_page3",
+          "score": 9.063,
+          "why": "关键词 员/员工/工；语义 +0.18"
+        },
+        {
+          "table": "Customer",
+          "score": 8.471,
+          "why": "关键词 公/公司/司/员；语义 +0.13"
+        },
+        {
+          "table": "law_ArmstrongFlooringInc_20190107_8K_EX1",
+          "score": 3.955,
+          "why": "关键词 公/公司/司"
+        }
+      ]
+    },
+    {
+      "q": "播放列表里一共有多少首歌",
+      "expect": [
+        "Playlist",
+        "PlaylistTrack"
+      ],
+      "got": [
+        "Playlist",
+        "PlaylistTrack",
+        "Album",
+        "Track",
+        "Artist",
+        "Genre"
+      ],
+      "top1": true,
+      "recall": true,
+      "top_rank": [
+        {
+          "table": "Playlist",
+          "score": 14.228,
+          "why": "关键词 列/列表/播/播放/放；语义 +0.17"
+        },
+        {
+          "table": "PlaylistTrack",
+          "score": 14.066,
+          "why": "关键词 列/列表/播/播放/放；语义 +0.16"
+        },
+        {
+          "table": "Album",
+          "score": 4.216,
+          "why": "关键词 列/列表/歌/表"
+        },
+        {
+          "table": "Track",
+          "score": 3.679,
+          "why": "关键词 歌/表；语义 +0.10"
+        }
+      ]
+    },
+    {
+      "q": "每张专辑有多少首曲目",
+      "expect": [
+        "Album",
+        "Track"
+      ],
+      "got": [
+        "Track",
+        "Album",
+        "PlaylistTrack",
+        "Playlist",
+        "MediaType",
+        "Artist"
+      ],
+      "top1": true,
+      "recall": true,
+      "top_rank": [
+        {
+          "table": "Track",
+          "score": 10.353,
+          "why": "关键词 专/专辑/曲/曲目/目；语义 +0.12"
+        },
+        {
+          "table": "Album",
+          "score": 7.557,
+          "why": "关键词 专/专辑/辑；语义 +0.13"
+        },
+        {
+          "table": "PlaylistTrack",
+          "score": 5.761,
+          "why": "关键词 曲/曲目/目；语义 +0.09"
+        },
+        {
+          "table": "Playlist",
+          "score": 5.722,
+          "why": "关键词 曲/曲目/目；语义 +0.09"
+        }
+      ]
+    },
+    {
+      "q": "哪个曲风最流行",
+      "expect": [
+        "Genre",
+        "InvoiceLine",
+        "Track"
+      ],
+      "got": [
+        "Genre",
+        "Track",
+        "Playlist",
+        "PlaylistTrack",
+        "MediaType",
+        "Artist"
+      ],
+      "top1": true,
+      "recall": true,
+      "top_rank": [
+        {
+          "table": "Genre",
+          "score": 10.748,
+          "why": "关键词 曲/曲风/流/风；语义 +0.18"
+        },
+        {
+          "table": "Track",
+          "score": 4.141,
+          "why": "关键词 曲/流；语义 +0.09"
+        },
+        {
+          "table": "Playlist",
+          "score": 3.584,
+          "why": "关键词 曲；语义 +0.10"
+        },
+        {
+          "table": "PlaylistTrack",
+          "score": 3.105,
+          "why": "关键词 曲；语义 +0.08"
+        }
+      ]
+    },
+    {
+      "q": "客户主要来自哪些国家",
+      "expect": [
+        "Customer"
+      ],
+      "got": [
+        "Customer",
+        "Invoice",
+        "Employee",
+        "finance_JPMORGAN_2022_10K_page3",
+        "finance_JPMORGAN_2023Q2_10Q",
+        "InvoiceLine"
+      ],
+      "top1": true,
+      "recall": true,
+      "top_rank": [
+        {
+          "table": "Customer",
+          "score": 12.383,
+          "why": "关键词 国/国家/客/客户/家；语义 +0.18"
+        },
+        {
+          "table": "Invoice",
+          "score": 9.073,
+          "why": "关键词 国/国家/客/客户/家；语义 +0.07"
+        },
+        {
+          "table": "Employee",
+          "score": 4.746,
+          "why": "关键词 国/国家/客/家"
+        },
+        {
+          "table": "finance_JPMORGAN_2022_10K_page3",
+          "score": 2.594,
+          "why": "语义 +0.09"
+        }
+      ]
+    },
+    {
+      "q": "How many customers are there",
+      "expect": [
+        "Customer"
+      ],
+      "got": [
+        "Customer",
+        "Invoice",
+        "Employee",
+        "finance_JPMORGAN_2022_10K_page3",
+        "finance_JPMORGAN_2023Q2_10Q",
+        "InvoiceLine"
+      ],
+      "top1": true,
+      "recall": true,
+      "top_rank": [
+        {
+          "table": "Customer",
+          "score": 11.215,
+          "why": "表名命中 customer；关键词 customer；语义 +0.21"
+        },
+        {
+          "table": "Invoice",
+          "score": 4.049,
+          "why": "关键词 customer；语义 +0.07"
+        },
+        {
+          "table": "Employee",
+          "score": 2.632,
+          "why": "语义 +0.09"
+        },
+        {
+          "table": "finance_JPMORGAN_2022_10K_page3",
+          "score": 2.023,
+          "why": "语义 +0.07"
+        }
+      ]
+    },
+    {
+      "q": "How many employees do we have",
+      "expect": [
+        "Employee"
+      ],
+      "got": [
+        "Employee",
+        "finance_JPMORGAN_2022_10K_page3",
+        "Customer",
+        "finance_JPMORGAN_2023Q2_10Q",
+        "Artist",
+        "InvoiceLine"
+      ],
+      "top1": true,
+      "recall": true,
+      "top_rank": [
+        {
+          "table": "Employee",
+          "score": 11.22,
+          "why": "表名命中 employee；关键词 employee；语义 +0.21"
+        },
+        {
+          "table": "finance_JPMORGAN_2022_10K_page3",
+          "score": 9.331,
+          "why": "关键词 employee；语义 +0.16"
+        },
+        {
+          "table": "Customer",
+          "score": 3.323,
+          "why": "语义 +0.11"
+        },
+        {
+          "table": "finance_JPMORGAN_2023Q2_10Q",
+          "score": 1.851,
+          "why": "语义 +0.06"
+        }
+      ]
+    },
+    {
+      "q": "How many tracks are there",
+      "expect": [
+        "Track"
+      ],
+      "got": [
+        "Track",
+        "PlaylistTrack",
+        "InvoiceLine",
+        "Album",
+        "Playlist",
+        "MediaType"
+      ],
+      "top1": true,
+      "recall": true,
+      "top_rank": [
+        {
+          "table": "Track",
+          "score": 9.437,
+          "why": "表名命中 track；关键词 track；语义 +0.17"
+        },
+        {
+          "table": "PlaylistTrack",
+          "score": 5.747,
+          "why": "表名命中 track；关键词 track；语义 +0.12"
+        },
+        {
+          "table": "InvoiceLine",
+          "score": 3.052,
+          "why": "关键词 track"
+        },
+        {
+          "table": "Album",
+          "score": 1.506,
+          "why": "语义 +0.05"
+        }
+      ]
+    },
+    {
+      "q": "List all albums",
+      "expect": [
+        "Album"
+      ],
+      "got": [
+        "Album",
+        "Track",
+        "Playlist",
+        "PlaylistTrack",
+        "Artist",
+        "MediaType"
+      ],
+      "top1": true,
+      "recall": true,
+      "top_rank": [
+        {
+          "table": "Album",
+          "score": 10.683,
+          "why": "表名命中 album；关键词 album；语义 +0.19"
+        },
+        {
+          "table": "Track",
+          "score": 4.604,
+          "why": "关键词 album；语义 +0.09"
+        },
+        {
+          "table": "Playlist",
+          "score": 4.069,
+          "why": "语义 +0.14"
+        },
+        {
+          "table": "PlaylistTrack",
+          "score": 2.798,
+          "why": "语义 +0.09"
+        }
+      ]
+    },
+    {
+      "q": "Which genres are the most popular",
+      "expect": [
+        "Genre",
+        "InvoiceLine",
+        "Track"
+      ],
+      "got": [
+        "Genre",
+        "Track",
+        "MediaType",
+        "Playlist",
+        "PlaylistTrack",
+        "Artist"
+      ],
+      "top1": true,
+      "recall": true,
+      "top_rank": [
+        {
+          "table": "Genre",
+          "score": 11.615,
+          "why": "表名命中 genre；关键词 genre；语义 +0.22"
+        },
+        {
+          "table": "Track",
+          "score": 5.177,
+          "why": "关键词 genre；语义 +0.11"
+        },
+        {
+          "table": "MediaType",
+          "score": 3.72,
+          "why": "语义 +0.12"
+        },
+        {
+          "table": "Playlist",
+          "score": 2.874,
+          "why": "语义 +0.10"
+        }
+      ]
+    }
+  ]
+}

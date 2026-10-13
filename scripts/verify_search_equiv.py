@@ -8,15 +8,35 @@
 降到 2 次。
 
 为什么必须单独写一个脚本证明，而不是「看代码觉得没问题」：
-  · 两次编码理论上应给出同一个向量，但 embedding 接口**不保证**确定性；
-    如果它不返回同一向量，召回与重排就会用两个略微不同的 query 向量，
-    结果排序可能悄悄变掉 —— 这类变化在人工点几次界面上是看不出来的。
   · 省调用是**性能**改动，只有「结果完全一致 + 调用次数下降」同时成立才算成功。
     少了任何一半，这个改动就不该合。
 
+⚠️ 关于「结果完全一致」怎么测才成立（2026-10-13 实测修正）：
+  最初的版本直接拿两种模式的分数比对，容差设 1e-06，结果 5/8 条问题判为不一致。
+  逐层排查后的结论是 —— **这不是本次优化造成的，而是 embedding 服务自身的性质**：
+
+    · `embed_query`（单条）实测**完全确定**：同文本连编 4 次，最大分量差 0.000e+00；
+    · `embed_documents`（批次）实测**不确定**：同一批次、同样输入连编两次，
+      分量差可达 3.9e-04（12 条批次实测全批最大 6.4e-04），折成余弦差约 1e-04；
+      二分实测：批次 1 条稳定，批次 2 / 4 / 8 / 12 条**全部不稳定**。
+
+  也就是说，只要重排那一批文档被编码两次，分数就会漂 ~1e-04 ——
+  这跟「query 向量复用与否」无关，容差 1e-06 落在服务噪声地板之下，
+  这条断言**任何实现都不可能通过**，因此它当时证明不了任何东西。
+
+  正确的实验设计是：把「服务噪声」这个无关变量**固定住**，只让被测变量
+  （召回与重排是否共用同一个 query 向量）变化。于是本脚本给 embeddings 套一层
+  **批次级记忆化**（`_CountingStableEmbeddings`）：同一批次文本第一次编码后缓存，
+  再次出现时直接返回首次结果。这样
+      · 两模式批次**逐字相同** → 分数**逐位相同**（断言才有意义）；
+      · 两模式批次一旦不同 → 缓存不命中，差异会被如实暴露（这正是要抓的）。
+  同时在报告末尾**实测并打印服务自身的抖动幅度**，让上面的结论可被复查，
+  而不是靠本文件的一句自述。
+
 做法：同一个进程内、同一个索引、同一批问题，分别以
 `RAG_RERANK_LEGACY=0/1` 跑一遍，逐条比对返回的
-(来源, 正文, 分数, 命中方式) 四元组，同时统计 embeddings 的调用次数。
+(来源, 正文, 命中方式) 三元组是否逐字相同、分数是否在容差内，
+同时统计 embeddings 的调用次数。
 
 用法：
     python scripts/verify_search_equiv.py
@@ -26,7 +46,6 @@
 注意：本脚本要统计 embedding 的真实调用次数，**必须联网 且 需要 EMBEDDING_API_KEY**，
 没有离线降级路径。缺 Key 时给可操作提示并以退出码 2 退出，不抛 openai 的崩栈。
 """
-import argparse
 import os
 import sys
 
@@ -37,6 +56,7 @@ os.chdir(ROOT)
 
 from _preflight import require_keys  # noqa: E402
 from tools import rag_tool  # noqa: E402
+from tools.rag_tool import _cosine  # noqa: E402
 
 QUESTIONS = [
     "智育前十是谁",
@@ -50,11 +70,15 @@ QUESTIONS = [
 ]
 
 
-class _Counter:
-    """包住真实 embeddings，只统计调用次数，不改行为。
+class _CountingStableEmbeddings:
+    """包住真实 embeddings：统计调用次数 + 批次级记忆化，不改单次编码行为。
 
     计数变量不能叫 embed_query / embed_documents —— 那会覆盖同名方法
     （实例属性遮蔽类方法），调用时直接 TypeError。用 n_* 前缀隔开。
+
+    `_doc_cache` 的键是**整批文本的元组**（不是单条文本）：只有「这一批
+    一字不差地出现过」才复用。批次是智谱接口的不确定单位（见模块 docstring），
+    按批次缓存才既消掉噪声、又不掩盖「候选集变了」这类真问题。
     """
 
     def __init__(self, inner):
@@ -62,6 +86,9 @@ class _Counter:
         self.n_query = 0
         self.n_docs = 0
         self.n_texts = 0
+        self.n_doc_hits = 0        # 其中命中缓存（未真正打服务）的次数
+        self._doc_cache = {}
+        self.batches = []          # 记录真正打过服务的批次，供事后实测服务抖动
 
     def __getattr__(self, name):
         return getattr(self._inner, name)
@@ -74,25 +101,52 @@ class _Counter:
         texts = list(texts)
         self.n_docs += 1
         self.n_texts += len(texts)
-        return self._inner.embed_documents(texts)
+        key = tuple(texts)
+        cached = self._doc_cache.get(key)
+        if cached is None:
+            cached = self._inner.embed_documents(texts)
+            self._doc_cache[key] = cached
+            self.batches.append(key)
+        else:
+            self.n_doc_hits += 1
+        return cached
 
 
-def run_once(tool, questions, legacy: bool, atol: float):
-    """跑一轮，返回 (每条问题的结果, 调用计数)。
+def measure_service_noise(wrapper, probe_query, sample=3):
+    """用真实批次实测 embedding 服务的抖动，作为「为什么需要记忆化」的客观依据。
 
-    计数必须同时挂在**两处** embeddings 上：
-      · tool.embeddings              —— _rerank 自己编码 query 走这里
-      · store._embedding_function    —— 向量召回内部编码 query 走这里
-    只包前者的话，旧模式（召回+重排各编码一次）也只会数到 1 次/题，
-    「省了调用」这件事根本观察不到 —— 第一版脚本就踩了这个坑。
+    只对**已缓存过的批次**重编两次，不额外引入新批次；再拿一个真实 query
+    向量算「同一文本两次编码会带来多大的分数漂移」，这是最能说明问题的数。
+    """
+    batch = next((b for b in wrapper.batches if len(b) >= 2), None)
+    if batch is None:
+        return None
+    a = wrapper._inner.embed_documents(list(batch))
+    b = wrapper._inner.embed_documents(list(batch))
+    q = wrapper._inner.embed_query(probe_query)
+    comp = max(max(abs(x - y) for x, y in zip(u, v)) for u, v in zip(a, b))
+    drift = max(abs(_cosine(q, u) - _cosine(q, v)) for u, v in zip(a, b))
+    return {"batch_size": len(batch), "max_component_delta": comp,
+            "max_score_drift": drift}
+
+
+def run_once(tool, questions, legacy: bool, wrapper):
+    """跑一轮，返回每条问题的结果。
+
+    计数与缓存都挂在**同一个** wrapper 上、跨两轮共用：
+      · 只包 tool.embeddings 的话，旧模式（召回+重排各编码一次）也只会数到
+        1 次/题，「省了调用」这件事根本观察不到 —— 第一版脚本就踩了这个坑；
+      · 缓存若每轮新建，模式 B 就会重新编码同一批次、重新吃一次服务噪声，
+        等价性断言又变回不可通过。所以两者都必须共用实例。
+    因此 wrapper 要同时挂到 tool.embeddings 与 store._embedding_function 两处：
+    前者是 _rerank 自编码 query 走的路径，后者是向量召回内部编码走的路径。
     """
     rag_tool.RERANK_LEGACY = legacy
-    counter = _Counter(tool.embeddings)
     store = tool.vector_store
     prev_fn = getattr(store, "_embedding_function", None)
-    tool.embeddings = counter
+    tool.embeddings = wrapper
     try:
-        store._embedding_function = counter
+        store._embedding_function = wrapper
     except Exception:
         pass
     results = []
@@ -104,10 +158,10 @@ def run_once(tool, questions, legacy: bool, atol: float):
                 hits = [{"error": f"{type(e).__name__}: {e}"}]
             results.append(hits)
     finally:
-        tool.embeddings = counter._inner
+        tool.embeddings = wrapper._inner
         if prev_fn is not None:
-            store._embedding_function = counter._inner
-    return results, counter
+            store._embedding_function = prev_fn
+    return results
 
 
 def _key(hit: dict):
@@ -148,7 +202,8 @@ def main():
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--atol", type=float, default=1e-6,
-                    help="分数允许的绝对误差（浮点求和顺序不同会有极小差异）")
+                    help="分数允许的绝对误差。服务噪声已被批次级记忆化固定，"
+                         "同一批次应给出逐位相同的分数，故该容差可取得很小。")
     ap.add_argument("--questions", type=int, default=len(QUESTIONS))
     args = ap.parse_args()
     questions = QUESTIONS[:args.questions]
@@ -167,15 +222,25 @@ def main():
         return 1
     print(f"索引就绪。用 {len(questions)} 个问题分别跑两种模式\n")
 
+    # 整个脚本**共用一个** wrapper：计数跨轮累加，批次缓存跨轮复用。
+    wrapper = _CountingStableEmbeddings(tool.embeddings)
+
     print("── 模式 A：复用 query 向量（新，RERANK_LEGACY=0）──")
-    new_res, c_new = run_once(tool, questions, legacy=False, atol=args.atol)
-    print(f"   embed_query 调用 {c_new.n_query} 次，"
-          f"embed_documents 调用 {c_new.n_docs} 次（合计 {c_new.n_texts} 条文本）")
+    new_res = run_once(tool, questions, legacy=False, wrapper=wrapper)
+    n_new_q = wrapper.n_query
+    n_new_d, n_new_hit = wrapper.n_docs, wrapper.n_doc_hits
+    print(f"   embed_query 调用 {n_new_q} 次，"
+          f"embed_documents 调用 {n_new_d} 次"
+          f"（{wrapper.n_texts} 条文本，打服务 {len(wrapper.batches)} 个批次）")
 
     print("\n── 模式 B：各自编码（旧，RERANK_LEGACY=1）──")
-    old_res, c_old = run_once(tool, questions, legacy=True, atol=args.atol)
-    print(f"   embed_query 调用 {c_old.n_query} 次，"
-          f"embed_documents 调用 {c_old.n_docs} 次（合计 {c_old.n_texts} 条文本）")
+    old_res = run_once(tool, questions, legacy=True, wrapper=wrapper)
+    n_old_q = wrapper.n_query - n_new_q
+    n_old_d = wrapper.n_docs - n_new_d
+    n_old_hit = wrapper.n_doc_hits - n_new_hit
+    print(f"   embed_query 调用 {n_old_q} 次，"
+          f"embed_documents 调用 {n_old_d} 次（其中命中批次缓存 {n_old_hit} 次，"
+          f"真正打服务 {n_old_d - n_old_hit} 次）")
 
     print()
     print("=" * 78)
@@ -192,11 +257,13 @@ def main():
               f"（来源 / 正文 / 命中方式逐字相同，分数差 ≤ {args.atol:.0e}）")
 
     print()
-    print(f"embed_query ：旧 {c_old.n_query} 次 → 新 {c_new.n_query} 次"
-          f"（省 {c_old.n_query - c_new.n_query} 次）")
-    print(f"embed_documents ：旧 {c_old.n_docs} 次 → 新 {c_new.n_docs} 次"
+    print(f"embed_query ：旧 {n_old_q} 次 → 新 {n_new_q} 次"
+          f"（省 {n_old_q - n_new_q} 次）")
+    print(f"embed_documents ：旧 {n_old_d} 次 → 新 {n_new_d} 次"
           f"（应完全相同，等价性要求候选集编码次数不变）")
-    saved = c_old.n_query - c_new.n_query
+    print(f"   其中命中批次缓存：旧 {n_old_hit} 次 → 新 {n_new_hit} 次"
+          f"（模式 B 两轮批次完全一致时，全部命中即说明候选集没变）")
+    saved = n_old_q - n_new_q
     expected = n
     if saved <= 0:
         print("❌ 没有省下任何 query 编码调用 —— 优化未生效")
@@ -207,7 +274,23 @@ def main():
         print(f"✅ 每题恰好省 1 次 query 编码，共建 {n} 次")
 
     print()
-    ok = not diffs and saved == expected and c_old.n_docs == c_new.n_docs
+    print("=" * 78)
+    print("附：embedding 服务自身的批次抖动（本脚本的记忆化正是在消除它）")
+    print("=" * 78)
+    noise = measure_service_noise(wrapper, questions[0])
+    if noise is None:
+        print("（本轮没有 ≥2 条的候选批次，跳过实测）")
+    else:
+        print(f"取自本轮真实候选批次（{noise['batch_size']} 条），同一批次连编两次：")
+        print(f"  · 最大分量差   {noise['max_component_delta']:.3e}")
+        print(f"  · 最大分数漂移 {noise['max_score_drift']:.3e}"
+              f"  ← 这就是未固定服务时分数会漂的量级")
+        print("  这说明：不加记忆化时，1e-06 的容差落在服务噪声地板之下，")
+        print("  断言恒不通过、也就恒不说明问题。固定批次后此噪声对两模式等价，")
+        print("  残余差异才真正归属被测的代码路径。")
+
+    print()
+    ok = not diffs and saved == expected and n_old_d == n_new_d
     print("✅ 等价性验证通过" if ok else "❌ 等价性验证未通过")
     return 0 if ok else 1
 

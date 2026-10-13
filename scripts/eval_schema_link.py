@@ -25,7 +25,7 @@ sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "scripts"))   # 同目录的 _preflight
 REPORT_DIR = os.path.join(ROOT, "data", "eval", "reports")
 
-from _preflight import require_keys                      # noqa: E402
+from _preflight import model_provenance, require_keys    # noqa: E402
 from tools.schema_linker import SchemaLinker              # noqa: E402
 from tools.sql_tool import SQLTool                        # noqa: E402
 
@@ -212,6 +212,11 @@ def main() -> int:
                 "mode": mode, "top_k": args.top_k,
                 # 向量实际生效的查询次数：0 表示 mode 是退化的 lexical
                 "vector_engaged_queries": lk.vec_ok_count,
+                # 本次实际使用的模型与端点。这一份尤其需要它：`mode` 是否为
+                # lexical+vector 完全取决于**用了哪个 embedding 模型/提供方**，
+                # 而不同提供方的向量维度与语义都不通用 —— 不记下来，
+                # 这份 20/20 就说不清是在什么条件下取得的。
+                "env": model_provenance(),
                 "n_tables": len(tables), "n": n,
                 "top1_hit": top1_ok, "top1_rate": top1_ok / n,
                 "recall_hit": recall_ok, "recall_rate": recall_ok / n,

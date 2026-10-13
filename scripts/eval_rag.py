@@ -16,7 +16,15 @@
     python scripts/eval_rag.py --limit 20      # 先小样本试跑
     python scripts/eval_rag.py --no-judge      # 只跑确定性指标，快
     python scripts/eval_rag.py --save
-退出码 0 = hit@4 ≥ 90% 且 answer_acc ≥ 90%；否则 1；2 = 缺 API Key；3 = 缺数据集
+退出码 0 = hit@4 ≥ 90% 且 answer_acc ≥ 90%；否则 1；3 = 缺数据集；
+      2 = LLM/Embedding 通道不可用（缺 Key **或裁判大面积失败**，如余额不足 402）。
+
+裁判失败的处置（重要）：裁判调用失败时 answer_acc / faithful **不予采信** ——
+这两个指标的分母必须只有「裁判真的判过」的题。若把失败也当成「答错」，
+一次额度不足就会把 84.8% 写成 1.5%，读者会把它误读成**质量退化**。
+（2026-10-13 实测踩到：DeepSeek 余额耗尽返回 402，65/66 条裁判失败，
+旧代码照常打印「答案准确率 1.5% / 忠实度 1.5%」并落盘。）
+确定性指标（hit@1 / hit@4 / 宽松匹配）不受影响，此时仍照常产出。
 """
 import argparse
 import json
@@ -27,12 +35,16 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
+# 裁判成功率低于这个比例，就认为裁判类指标整体不可采信（而不是"答得差"）。
+# 取 0.9：留 10% 的偶发失败余量（限流/超时重试即可），超过就说明是系统性问题。
+JUDGE_MIN_OK_RATE = 0.9
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 sys.path.insert(0, os.path.join(ROOT, "scripts"))
 os.chdir(ROOT)
 
-from _preflight import require_keys  # noqa: E402
+from _preflight import model_provenance, require_keys  # noqa: E402
 from tools.rag_tool import RAGTool  # noqa: E402
 
 CASES_PATH = os.path.join(ROOT, "data", "eval", "rag_cases.json")
@@ -116,7 +128,11 @@ def judge(llm, case, chunks, ans):
                 str(obj.get("faithful", "")).lower(),
                 str(obj.get("reason", ""))[:60])
     except Exception as e:
-        return "", "", f"judge_error:{type(e).__name__}"
+        # 把**消息**也带上：只记类型（APIStatusError）无法区分「限流 429」
+        # 「余额不足 402」「连接超时」—— 而这三者的处置完全不同。
+        # 空字符串的 correct/faithful 在下游会被判为「失败」，不会混进"答错"。
+        msg = re.sub(r"\s+", " ", str(e))[:140]
+        return "", "", f"judge_error:{type(e).__name__}: {msg}"
 
 
 def main():
@@ -201,6 +217,20 @@ def main():
     loose = sum(1 for r in results if r["loose"]) / n
     def pct(x): return f"{x*100:.1f}%"
 
+    # ── 裁判成功率先行判定：它决定 answer_acc / faithful 能不能报 ──
+    # 分母只算「裁判真的判过」的题。失败（余额不足 / 限流 / 超时）不进入分母，
+    # 否则一次基础设施故障就会被写成一次质量退化。
+    judge_errors = sum(1 for r in results
+                       if str(r.get("reason", "")).startswith("judge_error:"))
+    judge_ok = n - judge_errors
+    judge_usable = (not args.no_judge) and (judge_ok / n >= JUDGE_MIN_OK_RATE)
+    # 区分「用户主动关掉裁判」与「要了裁判但裁判跑不起来」：
+    # 前者是正常模式（照旧按 hit@4 判达标），后者才是通道故障（退出码 2）。
+    judge_failed_out = (not args.no_judge) and not judge_usable
+    judge_den = judge_ok if judge_ok else 1     # 防 0 除
+    judged = [r for r in results
+              if not str(r.get("reason", "")).startswith("judge_error:")]
+
     print()
     print("=" * 78)
     print("### 总指标")
@@ -208,11 +238,27 @@ def main():
     print(f"  检索命中率 hit@4 : {hitk:.3f}  ({pct(hitk)})")
     print(f"  答案宽松匹配率   : {loose:.3f}  ({pct(loose)})")
     if not args.no_judge:
-        ok = sum(1 for r in results if r.get("correct") == "yes")
-        part = sum(1 for r in results if r.get("correct") == "partial")
-        fa = sum(1 for r in results if r.get("faithful") == "yes")
-        print(f"  答案准确率(裁判) : {ok}/{n} = {pct(ok/n)}   （partial {part}）")
-        print(f"  忠实度(裁判)     : {fa}/{n} = {pct(fa/n)}")
+        if not judge_usable:
+            print(f"  ⚠️ LLM 裁判失败 {judge_errors}/{n} 条"
+                  f"（成功率 {pct(judge_ok / n)} < 阈值 {pct(JUDGE_MIN_OK_RATE)}）")
+            print("     **答案准确率 / 忠实度不予采信** —— 裁判没跑起来时若按「答错」计，")
+            print("     基础设施故障会被写成质量退化。失败原因（按出现次数）：")
+            kinds = {}
+            for r in results:
+                why = str(r.get("reason", ""))
+                if why.startswith("judge_error:"):
+                    kinds[why] = kinds.get(why, 0) + 1
+            for why, cnt in sorted(kinds.items(), key=lambda x: -x[1])[:3]:
+                print(f"       ×{cnt:<3} {why[:110]}")
+        else:
+            ok = sum(1 for r in results if r.get("correct") == "yes")
+            part = sum(1 for r in results if r.get("correct") == "partial")
+            fa = sum(1 for r in results if r.get("faithful") == "yes")
+            print(f"  答案准确率(裁判) : {ok}/{judge_ok} = {pct(ok / judge_den)}"
+                  f"   （partial {part}）")
+            print(f"  忠实度(裁判)     : {fa}/{judge_ok} = {pct(fa / judge_den)}")
+            if judge_errors:
+                print(f"  （另有 {judge_errors} 条裁判失败，已从上述分母中剔除）")
 
     print()
     print("### 分证据类型")
@@ -222,19 +268,22 @@ def main():
             print(f"  {ev:9s} n={len(sub):3d}  hit@4={pct(sum(1 for r in sub if r['hitk'])/len(sub))}"
                   f"  loose={pct(sum(1 for r in sub if r['loose'])/len(sub))}"
                   + (f"  judge={pct(sum(1 for r in sub if r.get('correct')=='yes')/len(sub))}"
-                     if not args.no_judge else ""))
+                     if judge_usable else ("" if args.no_judge else "  judge=不采信")))
     print("### 分域")
     for d in sorted({r["doc"].split("/")[0] for r in results}):
         sub = [r for r in results if r["doc"].startswith(d + "/")]
         print(f"  {d:9s} n={len(sub):3d}  hit@4={pct(sum(1 for x in sub if x['hitk'])/len(sub))}")
 
     ok_exit = hitk >= 0.9 and (args.no_judge or
-                               sum(1 for r in results if r.get("correct") == "yes") / n >= 0.9)
+                               (judge_usable and
+                                sum(1 for r in judged if r.get("correct") == "yes")
+                                / judge_den >= 0.9))
 
     if args.save:
         os.makedirs(REPORT_DIR, exist_ok=True)
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         slim = [{k: v for k, v in r.items() if k != "chunks"} for r in results]
+        prov = model_provenance()
 
         def rate(pred, pool):
             return (sum(1 for r in pool if pred(r)) / len(pool)) if pool else None
@@ -250,8 +299,10 @@ def main():
                     "n": len(sub),
                     "hit@4": rate(lambda r: r["hitk"], sub),
                     "loose": rate(lambda r: r["loose"], sub),
-                    "answer_acc": None if args.no_judge
-                    else rate(lambda r: r.get("correct") == "yes", sub),
+                    "answer_acc": None if not judge_usable
+                    else rate(lambda r: r.get("correct") == "yes",
+                              [r for r in sub
+                               if not str(r.get("reason", "")).startswith("judge_error:")]),
                 }
         for dom in sorted({r["doc"].split("/")[0] for r in results}):
             sub = [r for r in results if r["doc"].startswith(dom + "/")]
@@ -264,28 +315,47 @@ def main():
                 "hit@4": hitk,
                 "loose": loose,
                 "judge_enabled": not args.no_judge,
-                "answer_acc": None if args.no_judge
-                else rate(lambda r: r.get("correct") == "yes", results),
-                "answer_partial": None if args.no_judge
-                else rate(lambda r: r.get("correct") == "partial", results),
-                "faithful": None if args.no_judge
-                else rate(lambda r: r.get("faithful") == "yes", results),
+                # 裁判失败率过高时**写 null，而不是写一个小数字**：
+                # 一个「因为裁判没跑起来才算出来的 1.5%」比「没有这个数」更有害 ——
+                # 它会被后续读者当成真实的质量指标引用。
+                "judge_ok": None if args.no_judge else judge_ok,
+                "judge_errors": None if args.no_judge else judge_errors,
+                "judge_usable": judge_usable,
+                "answer_acc": None if not judge_usable
+                else rate(lambda r: r.get("correct") == "yes", judged),
+                "answer_partial": None if not judge_usable
+                else rate(lambda r: r.get("correct") == "partial", judged),
+                "faithful": None if not judge_usable
+                else rate(lambda r: r.get("faithful") == "yes", judged),
+                # 实际使用的模型与端点：本报告最需要它 —— 裁判质量高度依赖模型，
+                # 换模型会同时改变 answer_acc / faithful 的值（见 README §8）。
+                "env": model_provenance(),
                 "by_evidence": by_ev,
                 "by_domain": by_doc,
                 "results": slim,
             }, fh, ensure_ascii=False, indent=2)
         md = [f"# RAG 评测报告（{stamp}）", "",
               f"- 知识库：{len(os.listdir(KB_DIR))} 页（OHR-Bench gt 子集，{blob['meta']['docs']} 份文档）",
-              f"- 问题数：{n}", "",
+              f"- 问题数：{n}",
+              (f"- 模型：`{prov.get('llm_model')}` @ {prov.get('llm_base_url')}（裁判）"
+               f"；`{prov.get('embedding_model')}`（检索向量）") if prov else "- 模型：（未记录）",
+              "",
               "| 指标 | 数值 |", "|---|---|",
               f"| 检索命中率 hit@1 | {pct(hit1)} |",
               f"| 检索命中率 hit@4 | {pct(hitk)} |",
               f"| 答案宽松匹配率 | {pct(loose)} |"]
         if not args.no_judge:
-            md.append(f"| 答案准确率（LLM 裁判） | "
-                      f"{pct(sum(1 for r in results if r.get('correct')=='yes')/n)} |")
-            md.append(f"| 忠实度（LLM 裁判） | "
-                      f"{pct(sum(1 for r in results if r.get('faithful')=='yes')/n)} |")
+            if judge_usable:
+                md.append(f"| 答案准确率（LLM 裁判） | "
+                          f"{pct(sum(1 for r in judged if r.get('correct')=='yes')/judge_den)} |")
+                md.append(f"| 忠实度（LLM 裁判） | "
+                          f"{pct(sum(1 for r in judged if r.get('faithful')=='yes')/judge_den)} |")
+                if judge_errors:
+                    md.append(f"| ↳ 裁判失败（已从分母剔除） | {judge_errors}/{n} |")
+            else:
+                md.append(f"| 答案准确率（LLM 裁判） | **不可采信**：裁判失败 "
+                          f"{judge_errors}/{n}，未达到 {pct(JUDGE_MIN_OK_RATE)} 成功率 |")
+                md.append("| 忠实度（LLM 裁判） | **不可采信**（同上） |")
         md += ["", "| 证据类型 | 问题数 | hit@4 | 宽松匹配 | 裁判正确 |", "|---|---|---|---|---|"]
         for ev in ("text", "table", "equation"):
             sub = [r for r in results if r["ev"] == ev]
@@ -294,12 +364,21 @@ def main():
                           f"{pct(sum(1 for r in sub if r['hitk'])/len(sub))} | "
                           f"{pct(sum(1 for r in sub if r['loose'])/len(sub))} | "
                           + (pct(sum(1 for r in sub if r.get('correct')=='yes')/len(sub))
-                             if not args.no_judge else "-") + " |")
+                             if judge_usable
+                             else ("-" if args.no_judge else "不采信")) + " |")
         with open(os.path.join(REPORT_DIR, f"rag-{stamp}.md"), "w", encoding="utf-8") as fh:
             fh.write("\n".join(md))
         print(f"\n报告已落盘：{REPORT_DIR}")
 
     print()
+    if judge_failed_out:
+        # 不报 1（「跑完了但未达标」）—— 那会让人以为系统质量不达标。
+        # 实际是**依赖的服务不可用**，确定性指标仍然有效，故与缺 Key 同为 2。
+        print("⚠️ 本次只产出**确定性指标**（hit@1 / hit@4 / 宽松匹配），"
+              "裁判类指标不予采信。")
+        print("   退出码 2：依赖的 LLM 通道不可用（缺 Key / 额度不足 / 持续限流），"
+              "恢复后重跑。")
+        return 2
     print("✅ 达标" if ok_exit else "❌ 未达标（目标 hit@4 ≥ 90% 且 答案准确率 ≥ 90%）")
     return 0 if ok_exit else 1
 
