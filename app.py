@@ -122,9 +122,12 @@ with st.expander("📷 从图片导入数据表（OCR 识别）", expanded=False
         "支持 Excel / 系统界面截图、纸质表格照片。识别后重建为**结构化表**并入库 —— "
         "之后就能像问数据库一样直接提问（排名、聚合、精确值），而不只是全文检索。"
     )
+    # 引擎标签带真实模型名 —— 之前这里写死 "qwen-vl-max"，一旦 .env 换成别的
+    # 多模态模型（如 deepseek-flash），界面就在自述一个并未使用的模型名。
+    _vlm_name = getattr(Config, "VLM_MODEL", "") or "VLM"
     engine_label = st.radio(
         "识别引擎",
-        ["VLM（qwen-vl-max）", "本地 OCR（RapidOCR）"],
+        [f"VLM（{_vlm_name}）", "本地 OCR（RapidOCR）"],
         horizontal=True,
         key="ocr_engine",
         help="VLM 在倾斜 / 模糊 / 公式 / 图表上明显更强（实测单元格召回 61.3%→81.1%、"
@@ -149,7 +152,7 @@ with st.expander("📷 从图片导入数据表（OCR 识别）", expanded=False
             with open(dest, "wb") as fh:
                 fh.write(raw)
             try:
-                tip = ("正在调用 qwen-vl-max 识别（约 5~15 秒）..." if use_vlm
+                tip = (f"正在调用 {_vlm_name} 识别（约 5~15 秒）..." if use_vlm
                        else "正在本地识别并重建表格（首次运行需加载 OCR 模型，约 3~10 秒）...")
                 with st.spinner(tip):
                     res = (vlm_tool.recognize_table(dest) if use_vlm

@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
-"""视觉语言模型识别通道（阿里云百炼 qwen-vl-max）。
+"""视觉语言模型识别通道（任意 OpenAI 兼容的多模态模型）。
+
+模型名由 `Config.VLM_MODEL` 决定，**本模块不绑定具体提供方**：
+  · 默认值 `qwen-vl-max`（阿里云百炼）；
+  · 本仓库实测也在 `deepseek-flash` 上跑通（该模型输入模态含 image），
+    且复用 `LLM_API_KEY` 即可，无需单独申请 VLM key。
+报告里的模型名一律以 `Config.VLM_MODEL` / 报告溯源字段为准，不要写死。
 
 ## 为什么需要第二条通道
 

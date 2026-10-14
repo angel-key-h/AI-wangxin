@@ -163,7 +163,8 @@ def complexity_plan(f: dict) -> dict:
     if score >= 45:
         plan["parse_path"] = "vlm"
         plan["actions"].append(
-            "优先用 VLM（qwen-vl-max）通道解析或复核：对倾斜/扭曲表格与公式免疫度更高")
+            "优先用 VLM 通道解析或复核：对倾斜/扭曲表格与公式免疫度更高"
+            "（模型由 Config.VLM_MODEL 决定，默认 qwen-vl-max，可换 deepseek-flash）")
     elif score >= 20:
         plan["parse_path"] = "ocr+latex"
         plan["actions"].append(
