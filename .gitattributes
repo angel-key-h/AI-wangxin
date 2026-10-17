@@ -1,0 +1,14 @@
+# 二进制资产禁止换行转换。
+# 否则在 core.autocrlf=true 的机器上 clone 出来，PDF / XLSX / SQLite 会被改写而损坏
+# （2026-10-17 提交 PDF 时 git 就报过「LF will be replaced by CRLF」）。
+*.pdf    binary
+*.xlsx   binary
+*.xls    binary
+*.docx   binary
+*.pptx   binary
+*.png    binary
+*.jpg    binary
+*.sqlite binary
+*.sqlite3 binary
+*.bin    binary
+*.parquet binary
