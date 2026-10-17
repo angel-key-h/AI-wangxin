@@ -229,7 +229,9 @@ def main():
                        "results": results}, fh, ensure_ascii=False, indent=2)
         md = [f"# NL2SQL 执行准确率评测报告（{stamp}）", "",
               f"- 准确率：**{passed}/{total} = {acc*100:.1f}%**",
-              f"- 数据库：`{db}`", f"- 浮点容差：{tol}",
+              # 写相对路径：绝对路径会把作者本机目录结构带进公开报告，且对读者无意义
+              f"- 数据库：`{os.path.relpath(db, ROOT) if os.path.isabs(db) else db}`",
+              f"- 浮点容差：{tol}",
               f"- 模型：`{Config.LLM_MODEL}` @ {Config.LLM_BASE_URL}", "",
               "| 档位 | 通过 | 占比 |", "|---|---|---|"]
         for tier in ("single", "ranking", "aggregate", "multitable"):
