@@ -41,6 +41,11 @@ set "PY="
 if defined PYTHON_BIN set "PY=%PYTHON_BIN%"
 if defined PY goto :have_py
 
+rem     Prefer a project-local virtualenv when present (create it by hand, see README 4.2 step 0).
+rem     Keeps the 27 pinned packages out of the judge's global Python.
+if exist "%~dp0.venv\Scripts\python.exe" set "PY=%~dp0.venv\Scripts\python.exe"
+if defined PY goto :have_py
+
 py -3 -c "import streamlit" >nul 2>nul
 if not errorlevel 1 set "PY=py -3"
 if defined PY goto :have_py
@@ -59,7 +64,8 @@ if not errorlevel 1 set "PY=python"
 if defined PY goto :have_py
 
 echo [ERROR] No usable Python found.
-echo         Install Python 3.10+ from https://www.python.org/downloads/
+echo         Install Python 3.13 (the version this project is tested on):
+echo         https://www.python.org/downloads/
 echo         and tick "Add python.exe to PATH" during setup.
 echo         Then run this script again.
 goto :fail

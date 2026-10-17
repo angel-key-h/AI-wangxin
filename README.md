@@ -65,37 +65,84 @@
 
 ## 3. 运行环境说明
 
-**实测通过的运行环境**（本机 `Windows 11`）：
+> **评委侧只需自备三样东西：Python 3.13、可联网、两把 API Key（DeepSeek + 智谱）。**
+> 本作品**不含 `.env`**（含密钥的文件不随作品分发），也**不含虚拟环境与向量索引**
+> （首次运行自动生成）。除此之外**不需要安装数据库、不需要 GPU、不需要额外下模型**。
 
-| 项 | 版本 |
-|---|---|
-| 操作系统 | Windows 11 (x64) |
-| Python | **3.13+**（本仓库实测 3.13.12；版本一律由 `requirements.txt` 钉死，仓库无 pyproject） |
-| Streamlit | 1.65.0 |
-| pandas / openpyxl | 3.0.6 / 3.1.5 |
-| langgraph / langchain-core | 1.2.14 / 1.6.9 |
-| chromadb | 1.5.9 |
-| onnxruntime（本地 OCR） | 1.31.0 |
-| SQLite | Python 内置 `sqlite3`（无需额外安装） |
+### 3.1 硬件与操作系统
 
-**外部服务**：任一 OpenAI 兼容端点，需要三个模型。下表是 `config.py` 里的
-**代码默认值**（阿里云百炼 DashScope）：
-
-| 用途 | 默认模型 | 说明 |
+| 项 | 要求 | 本作品实测 |
 |---|---|---|
-| 对话 / SQL 生成 / 改写 | `qwen3-max` | 主 LLM |
-| 向量化 | `text-embedding-v4` | 默认 1024 维，单批上限 10 条 |
-| 图像识别 | `qwen-vl-max` | 表格 / 公式 / 图表；未配置时自动退回本地 OCR |
+| 操作系统 | Windows 10 / 11（x64）。Linux / macOS 同样可跑，但一键脚本（`.bat`）不适用，按 4.2 手动执行 | Windows 11 x64 |
+| CPU / 内存 | 无 GPU 要求（本地 OCR 走 CPU 推理）；建议可用内存 ≥ 4 GB | — |
+| **磁盘** | **≥ 2 GB 可用空间**（依赖约 0.9 GB + 数据与索引约 30 MB + pip 下载缓存） | — |
+| **Python** | **3.13**（实测 3.13.12）。`start.bat` 的提示语写 3.10+，但**依赖版本只在 3.13 上验证过**，其他小版本未测 | 3.13.12 |
 
-> ⚠️ **默认值 ≠ 本仓库的实测配置。** 本仓库的 `.env` 与 `data/eval/reports/`
-> 里的**全部**报告，用的都是 **DeepSeek（`deepseek-flash`）+ 智谱（`embedding-3`）**
-> —— 见 5.1 的实测结论。两套配置模型不同，**数字不可混用**；每份报告的模型名
-> 由 `scripts/_preflight.py` 写入溯源字段，比对前先读溯源。
+### 3.2 依赖包（27 项，版本全部 `==` 钉死）
 
-> `qwen-vl-max` 未配置时系统**不会报错**，会静默降级到 RapidOCR（见
-> `Config.vlm_ready()`）。这保证了离线环境也能跑通基础任务。
+一条命令装齐：`python -m pip install -r requirements.txt`（两三分钟，视网速）。
+国内网络可加镜像：`-i https://pypi.tuna.tsinghua.edu.cn/simple`。
 
-**无需 GPU**：本地 OCR 走 `rapidocr-onnxruntime`（CPU 推理）；重模型全部在云端 API。
+| 用途 | 主要依赖及版本 |
+|---|---|
+| 前端 | streamlit 1.65.0 / pandas 3.0.6 / openpyxl 3.1.5 / python-dotenv 1.2.4 |
+| 编排与 LLM | langgraph 1.2.14 / langchain-core 1.6.9 / langchain-openai 1.7.0 / langchain-community 0.4.2 |
+| 向量检索 | chromadb 1.5.9 / langchain-chroma 1.1.0 / langchain-text-splitters 1.1.3 |
+| 文档解析 | pypdf 6.20.0 / python-docx / python-pptx |
+| 本地 OCR | rapidocr-onnxruntime / onnxruntime 1.31.0 / opencv |
+| 其他 | SQLAlchemy 2.1.4 / matplotlib（评测作图） |
+
+> 完整清单见 `requirements.txt`（含注释说明为什么用 `==` 而不是 `>=`）。
+> **为什么钉死**：换台机器装出来的环境必须与 `data/eval/reports/` 里的评测报告一致，
+> 否则指标不可复现。
+
+### 3.3 外部服务与密钥（**必需**）
+
+需要**两把** Key、分属**两家**服务 —— 一家不够：DeepSeek 不提供 embedding 接口
+（`/v1/embeddings` 实测 404），向量化必须另找提供方。
+
+| 用途 | 环境变量 | 本作品实测配置 | 申请地址 |
+|---|---|---|---|
+| 对话 / SQL 生成 / 问题改写 / 图像识别 | `LLM_API_KEY`、`LLM_MODEL`、`LLM_BASE_URL` | `deepseek-flash` @ `https://api.deepseek.com/v1` | platform.deepseek.com |
+| 向量化 | `EMBEDDING_API_KEY`、`EMBEDDING_MODEL`、`EMBEDDING_BASE_URL` | `embedding-3` @ `https://open.bigmodel.cn/api/paas/v4` | open.bigmodel.cn |
+
+配置方法：把 `.env.example` 复制成 `.env`，填入两把 Key（`.env` 与 `app.py` 同级）。
+实现上用的是 OpenAI 兼容协议，所以**任何 OpenAI 兼容端点都能替换**（`config.py` 里的
+代码默认值是阿里云百炼 `qwen3-max` + `text-embedding-v4` + `qwen-vl-max`；
+本作品实测用的是 DeepSeek + 智谱，两者模型不同，**数字不可混用**，见 5.1）。
+
+**缺 Key 时的表现**（这是设计好的降级，不是崩溃）：页面照常打开、侧栏可浏览，
+顶部显示「❌ 缺少必要的 API Key：…」，**提问功能不可用**；不会抛堆栈、不会静默 401。
+
+### 3.4 网络
+
+| 环节 | 需要访问 | 说明 |
+|---|---|---|
+| 安装依赖 | PyPI | 可用国内镜像 |
+| 运行 | `api.deepseek.com`、`open.bigmodel.cn` | **国内可直连**；若挂了全局代理可能超时，建议对这两个域名直连 |
+| 首次建索引 | 同上（走 embedding 接口） | — |
+
+**不需要**访问 GitHub / HuggingFace：本地 OCR 的 ONNX 模型随 `rapidocr-onnxruntime`
+依赖一起装好，运行期不下载任何模型。
+
+### 3.5 首次启动会做什么（约 3–5 分钟）
+
+1. **建问数库**：`scripts/init_runtime.py` 以 `data/chinook.sqlite` 为基底，叠加 `rag_data/`
+   下的表格文件，生成 `data/agent.sqlite`（16 张表）。**秒级完成、全程离线、不需要 Key**。
+2. **建向量索引**：把 `rag_data/` 的 13 份文档切成 **837 个检索片段** 写入 `data/vector_store`，
+   需要 `EMBEDDING_API_KEY`，**约 3–5 分钟**。索引不随包分发（13 MB，可由源文件随时重建）；
+   建好后下次启动直接复用，不会重复构建。
+
+### 3.6 明确不支持 / 未验证的情形（避免被误判为缺陷）
+
+| 情形 | 实际表现 |
+|---|---|
+| 目标机没有 Python | `start.bat` 报「No usable Python found」并给出 python.org 下载地址后退出，不会静默失败 |
+| 完全无外网 | `pip install` 明确报错；若依赖已装好，程序能启动，但调用 API 会报连接错误 |
+| 只配了一把 Key | 启动时点名缺哪个变量；缺 embedding 时索引建不起来，检索自动降级为纯词法 |
+| 没有 GPU | 不影响任何功能 |
+| Linux / macOS | `.bat` 不适用，按 4.2 手动四步执行 |
+| 想跑三个 OHR 评测 | `eval_doc_recog` / `eval_doc_quality` / `eval_correction` 缺数据集时以**退出码 3** 优雅退出（演示与其余评测不受影响） |
 
 ---
 
@@ -107,28 +154,43 @@
 start.bat
 ```
 
-脚本会自动完成：检查 Python → 检查/创建虚拟环境 → 安装依赖 → 校验 `.env` →
-首次运行时构建问数库与向量索引 → 启动 Streamlit。
+脚本按顺序做 5 步：
+
+1. **找解释器** —— 依次检查：`PYTHON_BIN` 环境变量 → 本目录下已有的 `.venv` → `py -3` → `python`；
+   都没有就报错并给出 python.org 下载地址后退出。
+2. **装依赖** —— 若 `%PY% -c "import streamlit"` 失败，则执行 `pip install -r requirements.txt`；
+   已装则跳过（**脚本可重复执行**）。
+3. **校验 `.env`** —— 缺失只告警、不中断（页面会给出缺 Key 提示，见 3.3）。
+4. **初始化** —— 建问数库、导出 schema（离线）。
+5. **启动** —— 打开 <http://localhost:8501>。
+
+> 脚本**不安装 Python 本身**，也不会联网下载解释器。
+> **建议先按 4.2 的第 0 步建 `.venv`**：依赖会装进隔离环境，不污染系统 Python；
+> 建好后 `start.bat` 会自动优先使用它（这一条已用真实 `.venv` 验证过）。
 
 ### 4.2 手动启动
 
 ```bash
+# 0) （可选，强烈推荐）建隔离环境 —— 之后 start.bat 会自动优先用它
+python -m venv .venv
+.venv\Scripts\activate          # Windows
+# source .venv/bin/activate     # Linux / macOS
+
 # 1) 安装依赖
 python -m pip install -r requirements.txt
 
 # 2) 配置密钥（见第 5 节）
-cp .env.example .env   # 若无 .env.example，直接新建 .env
+cp .env.example .env            # Windows: copy .env.example .env
 
 # 3) 首次初始化（建问数库 + 导出 schema，全程离线、不需要 API Key）
 python scripts/init_runtime.py --force
 
-# 4) 启动（向量索引在首次打开页面时自动构建）
+# 4) 启动（向量索引在首次打开页面时自动构建，约 3–5 分钟）
 streamlit run app.py
 ```
 
 > `scripts/build_demo_kb.py` 用于**重新生成**多格式演示知识库，它依赖 OHR-Bench
-> 数据集（`data/ohr/`，由 `.workbuddy/download_ohr.py` 下载，未随仓库分发）；
-> 只想把项目跑起来不需要它 —— 仓库里已带 13 份成品文档。
+> 数据集（`data/ohr/`，未随包分发）；只想把项目跑起来**不需要**它 —— 包里已带 13 份成品文档。
 
 浏览器打开 <http://localhost:8501> 即可。
 
@@ -242,8 +304,7 @@ intelligent-qa-agent/
    > 学院、专业全部为虚构（学院统一为「示例大学信息工程学院」，班级为 2990002–2990020），
    > 与任何真实班级、真实个人无关；只有数值列保留了原始分布，以免影响聚合 / 排序类
    > 评测的可比性（改名是等长、一对一映射，所有 SQL 答案不变）。真实名单不入库、
-   > 不随提交包分发。**完整说明（虚构字段取值范围、替换方法、涉及文件、自行核对方法）
-   > 见 [`docs/合成数据说明.md`](docs/合成数据说明.md)**。
+   > 不随提交包分发。
 
    > 这条链路本身就是「**非结构化文件 → 结构化问数**」能力的演示：
    > 「智育前十是谁」在只接 Chinook 时无表可用，`db_builder` 把 xlsx 建成表后
