@@ -2,9 +2,9 @@
 """验证澄清选项按钮是「真的可点、点了真的能继续」——这是「体验好」那 3 分的落点。
 
 只验证行为链路，不重复算指标：
-  1. 问「胡子杨」→ 必须出现澄清，且选项里有「胡子扬」
-  2. 页面上必须**真的存在**一个 label 为「胡子扬」的按钮（不是一行文字）
-  3. 点它 → 必须以「胡子扬」继续作答，且答案里带出真实数据（90.7）
+  1. 问「贾素兰」→ 必须出现澄清，且选项里有「贾淑兰」
+  2. 页面上必须**真的存在**一个 label 为「贾淑兰」的按钮（不是一行文字）
+  3. 点它 → 必须以「贾淑兰」继续作答，且答案里带出真实数据（90.7）
 """
 import os
 import sys
@@ -42,22 +42,22 @@ at.run()
 check("初始页无异常", not at.exception,
       "; ".join(str(e.value) for e in at.exception[:2]))
 
-at.chat_input[0].set_value("胡子杨").run()
+at.chat_input[0].set_value("贾素兰").run()
 warn = " ".join(str(w.value) for w in at.warning)
-check("触发澄清（提示里点名了正确写法）", "胡子扬" in warn and "仅一字之差" in warn,
+check("触发澄清（提示里点名了正确写法）", "贾淑兰" in warn and "仅一字之差" in warn,
       warn[:120].replace("\n", " "))
 
 labels = [b.label for b in at.button]
-target = [l for l in labels if l.strip() == "胡子扬"]
-check("页面上存在可点的「胡子扬」按钮（不是纯文字）", bool(target),
+target = [l for l in labels if l.strip() == "贾淑兰"]
+check("页面上存在可点的「贾淑兰」按钮（不是纯文字）", bool(target),
       f"现有按钮：{labels[:8]}")
 
 if target:
-    key = next(b.key for b in at.button if b.label.strip() == "胡子扬")
+    key = next(b.key for b in at.button if b.label.strip() == "贾淑兰")
     at.button(key=key).click().run()
     check("点击后无异常", not at.exception,
           "; ".join(str(e.value) for e in at.exception[:2]))
-    # 点完「胡子扬」后**还会再问一次**「你想了解哪方面」——这是正确行为：
+    # 点完「贾淑兰」后**还会再问一次**「你想了解哪方面」——这是正确行为：
     # 裸名字本身仍缺「查询维度」。所以这里要断言的是「进入了第二轮引导」，
     # 而不是「立刻给出数据」（早先的断言就是照着旧行为写的，行为一改就误报失败）。
     labels2 = [b.label for b in at.button]

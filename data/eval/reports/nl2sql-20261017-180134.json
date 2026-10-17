@@ -1,0 +1,1058 @@
+{
+  "accuracy": 0.9411764705882353,
+  "passed": 32,
+  "total": 34,
+  "env": {
+    "llm_model": "deepseek-flash",
+    "llm_base_url": "https://api.deepseek.com/v1",
+    "embedding_model": "embedding-3"
+  },
+  "results": [
+    {
+      "id": "B01",
+      "tier": "single",
+      "mode": "scalar",
+      "q": "一共有多少人参评？",
+      "ok": true,
+      "why": "",
+      "sec": 38.49,
+      "intent": "sql",
+      "sql": "SELECT MAX(\"参评人数\") AS \"参评人数\" FROM \"综合素质测评情况\";",
+      "agent_rows": [
+        [
+          569.0
+        ]
+      ],
+      "gold_rows": [
+        [
+          569.0
+        ]
+      ],
+      "note": "单表计数"
+    },
+    {
+      "id": "B02",
+      "tier": "single",
+      "mode": "scalar",
+      "q": "贾淑兰的综合素质测评成绩是多少？",
+      "ok": true,
+      "why": "",
+      "sec": 5.12,
+      "intent": "sql",
+      "sql": "SELECT \"综合素质测评成绩\" FROM \"综合素质测评情况\" WHERE \"姓名\" = '贾淑兰';",
+      "agent_rows": [
+        [
+          104.3
+        ]
+      ],
+      "gold_rows": [
+        [
+          104.3
+        ]
+      ],
+      "note": "精确实体"
+    },
+    {
+      "id": "B03",
+      "tier": "single",
+      "mode": "scalar",
+      "q": "学号 2025900111 的学生叫什么名字？",
+      "ok": true,
+      "why": "",
+      "sec": 5.11,
+      "intent": "sql",
+      "sql": "SELECT \"姓名\" FROM \"综合素质测评情况\" WHERE \"学号\" = 2025900111;",
+      "agent_rows": [
+        [
+          "龙轩琪"
+        ]
+      ],
+      "gold_rows": [
+        [
+          "龙轩琪"
+        ]
+      ],
+      "note": "按数字 ID 反查"
+    },
+    {
+      "id": "B04",
+      "tier": "single",
+      "mode": "scalar",
+      "q": "综合素质测评成绩排名第一的是谁？",
+      "ok": true,
+      "why": "",
+      "sec": 5.29,
+      "intent": "sql",
+      "sql": "SELECT \"姓名\" FROM \"综合素质测评情况\" WHERE \"综合素质测评成绩排名\" = 1 LIMIT 1;",
+      "agent_rows": [
+        [
+          "刘志菲"
+        ]
+      ],
+      "gold_rows": [
+        [
+          "刘志菲"
+        ]
+      ],
+      "note": "用现成排名列"
+    },
+    {
+      "id": "B05",
+      "tier": "single",
+      "mode": "scalar",
+      "q": "智育测评分的最高分是多少？",
+      "ok": true,
+      "why": "",
+      "sec": 4.32,
+      "intent": "sql",
+      "sql": "SELECT MAX(\"智育测评分\") AS \"智育测评最高分\" FROM \"综合素质测评情况\";",
+      "agent_rows": [
+        [
+          90.7
+        ]
+      ],
+      "gold_rows": [
+        [
+          90.7
+        ]
+      ],
+      "note": "MAX"
+    },
+    {
+      "id": "B06",
+      "tier": "single",
+      "mode": "scalar",
+      "q": "徐雨军的德育测评分是多少？",
+      "ok": true,
+      "why": "",
+      "sec": 4.45,
+      "intent": "sql",
+      "sql": "SELECT \"德育测评分\" FROM \"综合素质测评情况\" WHERE \"姓名\" = '徐雨军';",
+      "agent_rows": [
+        [
+          83.45
+        ]
+      ],
+      "gold_rows": [
+        [
+          83.45
+        ]
+      ],
+      "note": "中文列名"
+    },
+    {
+      "id": "B07",
+      "tier": "single",
+      "mode": "scalar",
+      "q": "2990004 班有多少人？",
+      "ok": true,
+      "why": "",
+      "sec": 7.84,
+      "intent": "sql",
+      "sql": "SELECT COUNT(*) FROM \"综合素质测评情况\" WHERE \"行政班\" = 2990004;",
+      "agent_rows": [
+        [
+          31.0
+        ]
+      ],
+      "gold_rows": [
+        [
+          31.0
+        ]
+      ],
+      "note": "数字型班级号过滤"
+    },
+    {
+      "id": "B08",
+      "tier": "single",
+      "mode": "scalar",
+      "q": "一共有多少个行政班？",
+      "ok": true,
+      "why": "",
+      "sec": 5.22,
+      "intent": "sql",
+      "sql": "SELECT COUNT(DISTINCT \"行政班\") FROM \"综合素质测评情况\";",
+      "agent_rows": [
+        [
+          19.0
+        ]
+      ],
+      "gold_rows": [
+        [
+          19.0
+        ]
+      ],
+      "note": "COUNT DISTINCT"
+    },
+    {
+      "id": "B09",
+      "tier": "single",
+      "mode": "scalar",
+      "q": "综合素质测评成绩的平均分是多少？",
+      "ok": true,
+      "why": "",
+      "sec": 5.87,
+      "intent": "sql",
+      "sql": "SELECT AVG(\"综合素质测评成绩\") AS \"平均分\" FROM \"综合素质测评情况\";",
+      "agent_rows": [
+        [
+          76.5449560632689
+        ]
+      ],
+      "gold_rows": [
+        [
+          76.5449560632689
+        ]
+      ],
+      "note": "AVG（浮点容差）"
+    },
+    {
+      "id": "B10",
+      "tier": "single",
+      "mode": "scalar",
+      "q": "这些学生属于哪个学院？",
+      "ok": false,
+      "why": "未生成 SQL",
+      "sec": 3.2,
+      "intent": "sql",
+      "sql": "",
+      "agent_rows": [],
+      "gold_rows": [
+        [
+          "示例大学信息工程学院"
+        ]
+      ],
+      "note": "DISTINCT 单值"
+    },
+    {
+      "id": "B11",
+      "tier": "single",
+      "mode": "scalar",
+      "q": "有多少人的扣分是 0？",
+      "ok": true,
+      "why": "",
+      "sec": 5.37,
+      "intent": "sql",
+      "sql": "SELECT COUNT(*) FROM \"综合素质测评情况\" WHERE \"扣分\" = 0;",
+      "agent_rows": [
+        [
+          550.0
+        ]
+      ],
+      "gold_rows": [
+        [
+          550.0
+        ]
+      ],
+      "note": "数值等值"
+    },
+    {
+      "id": "B12",
+      "tier": "single",
+      "mode": "scalar",
+      "q": "邵海的行政班是多少？",
+      "ok": true,
+      "why": "",
+      "sec": 5.68,
+      "intent": "sql",
+      "sql": "SELECT \"行政班\" FROM \"综合素质测评情况\" WHERE \"姓名\" = '邵海';",
+      "agent_rows": [
+        [
+          2990007.0
+        ]
+      ],
+      "gold_rows": [
+        [
+          2990007.0
+        ]
+      ],
+      "note": "短实体 + 整数列"
+    },
+    {
+      "id": "R01",
+      "tier": "ranking",
+      "mode": "ordered",
+      "q": "智育测评分前十是谁？",
+      "ok": true,
+      "why": "",
+      "sec": 5.43,
+      "intent": "sql",
+      "sql": "SELECT \"姓名\", \"智育测评分\", \"智育测评分排名\" FROM \"综合素质测评情况\" ORDER BY \"智育测评分\" DESC LIMIT 10;",
+      "agent_rows": [
+        [
+          "贾淑兰",
+          90.7,
+          1.0
+        ],
+        [
+          "徐雨军",
+          90.06,
+          2.0
+        ],
+        [
+          "邵海",
+          89.81,
+          3.0
+        ],
+        [
+          "梁娟红",
+          89.52,
+          4.0
+        ]
+      ],
+      "gold_rows": [
+        [
+          "贾淑兰"
+        ],
+        [
+          "徐雨军"
+        ],
+        [
+          "邵海"
+        ],
+        [
+          "梁娟红"
+        ]
+      ],
+      "note": "无并列，可校验顺序"
+    },
+    {
+      "id": "R02",
+      "tier": "ranking",
+      "mode": "ordered",
+      "q": "综合素质测评成绩前三名是谁？",
+      "ok": true,
+      "why": "",
+      "sec": 5.97,
+      "intent": "sql",
+      "sql": "SELECT \"姓名\", \"学号\", \"综合素质测评成绩\", \"综合素质测评成绩排名\" FROM \"综合素质测评情况\" ORDER BY \"综合素质测评成绩\" DESC LIMIT 3;",
+      "agent_rows": [
+        [
+          "刘志菲",
+          2025900515.0,
+          108.61,
+          1.0
+        ],
+        [
+          "邵晓秀",
+          2025900247.0,
+          106.39,
+          2.0
+        ],
+        [
+          "杨晨",
+          2025900544.0,
+          106.02,
+          3.0
+        ]
+      ],
+      "gold_rows": [
+        [
+          "刘志菲"
+        ],
+        [
+          "邵晓秀"
+        ],
+        [
+          "杨晨"
+        ]
+      ],
+      "note": "无并列"
+    },
+    {
+      "id": "R03",
+      "tier": "ranking",
+      "mode": "ordered",
+      "q": "综合素质测评成绩前十名是谁？",
+      "ok": true,
+      "why": "",
+      "sec": 7.71,
+      "intent": "sql",
+      "sql": "SELECT \"姓名\", \"学号\", \"学院\", \"专业\", \"综合素质测评成绩\", \"综合素质测评成绩排名\" FROM \"综合素质测评情况\" ORDER BY \"综合素质测评成绩\" DESC LIMIT 10;",
+      "agent_rows": [
+        [
+          "刘志菲",
+          2025900515.0,
+          "示例大学信息工程学院",
+          "电子信息类",
+          108.61,
+          1.0
+        ],
+        [
+          "邵晓秀",
+          2025900247.0,
+          "示例大学信息工程学院",
+          "电子信息类",
+          106.39,
+          2.0
+        ],
+        [
+          "杨晨",
+          2025900544.0,
+          "示例大学信息工程学院",
+          "电子信息类",
+          106.02,
+          3.0
+        ],
+        [
+          "徐雨军",
+          2025900483.0,
+          "示例大学信息工程学院",
+          "电子信息类",
+          105.84,
+          4.0
+        ]
+      ],
+      "gold_rows": [
+        [
+          "刘志菲"
+        ],
+        [
+          "邵晓秀"
+        ],
+        [
+          "杨晨"
+        ],
+        [
+          "徐雨军"
+        ]
+      ],
+      "note": "无并列"
+    },
+    {
+      "id": "R04",
+      "tier": "ranking",
+      "mode": "ordered",
+      "q": "体育测评分前五名是谁？",
+      "ok": true,
+      "why": "",
+      "sec": 5.63,
+      "intent": "sql",
+      "sql": "SELECT \"学号\", \"姓名\", \"体育测评分\", \"体育测评分排名\" FROM \"综合素质测评情况\" ORDER BY \"体育测评分\" DESC LIMIT 5;",
+      "agent_rows": [
+        [
+          2025900097.0,
+          "唐巧瑶",
+          85.0,
+          1.0
+        ],
+        [
+          2025900095.0,
+          "张静超",
+          84.0,
+          2.0
+        ],
+        [
+          2025900515.0,
+          "刘志菲",
+          80.5,
+          3.0
+        ],
+        [
+          2025900294.0,
+          "曾晓明",
+          78.0,
+          4.0
+        ]
+      ],
+      "gold_rows": [
+        [
+          "唐巧瑶"
+        ],
+        [
+          "张静超"
+        ],
+        [
+          "刘志菲"
+        ],
+        [
+          "曾晓明"
+        ]
+      ],
+      "note": "无边界并列"
+    },
+    {
+      "id": "R05",
+      "tier": "ranking",
+      "mode": "rows",
+      "q": "德育测评分前五名是谁？",
+      "ok": true,
+      "why": "",
+      "sec": 6.18,
+      "intent": "sql",
+      "sql": "SELECT \"学号\", \"姓名\", \"德育测评分\", \"德育测评分排名\" FROM \"综合素质测评情况\" ORDER BY \"德育测评分\" DESC LIMIT 5;",
+      "agent_rows": [
+        [
+          2025900462.0,
+          "武雨军",
+          99.75,
+          1.0
+        ],
+        [
+          2025900132.0,
+          "彭小明",
+          99.54,
+          2.0
+        ],
+        [
+          2025900218.0,
+          "韦华秀",
+          99.54,
+          2.0
+        ],
+        [
+          2025900177.0,
+          "肖晨斌",
+          99.41,
+          4.0
+        ]
+      ],
+      "gold_rows": [
+        [
+          "武雨军"
+        ],
+        [
+          "彭小明"
+        ],
+        [
+          "韦华秀"
+        ],
+        [
+          "肖晨斌"
+        ]
+      ],
+      "note": "第5/6名同值，只能集合比较"
+    },
+    {
+      "id": "R06",
+      "tier": "ranking",
+      "mode": "rows",
+      "q": "德育测评分前十名是谁？",
+      "ok": true,
+      "why": "",
+      "sec": 8.8,
+      "intent": "sql",
+      "sql": "SELECT \"姓名\", \"学号\", \"学院\", \"专业\", \"德育测评分\", \"德育测评分排名\" FROM \"综合素质测评情况\" ORDER BY \"德育测评分\" DESC LIMIT 10;",
+      "agent_rows": [
+        [
+          "武雨军",
+          2025900462.0,
+          "示例大学信息工程学院",
+          "电子信息类",
+          99.75,
+          1.0
+        ],
+        [
+          "彭小明",
+          2025900132.0,
+          "示例大学信息工程学院",
+          "电子信息类",
+          99.54,
+          2.0
+        ],
+        [
+          "韦华秀",
+          2025900218.0,
+          "示例大学信息工程学院",
+          "电子信息类",
+          99.54,
+          2.0
+        ],
+        [
+          "肖晨斌",
+          2025900177.0,
+          "示例大学信息工程学院",
+          "电子信息类",
+          99.41,
+          4.0
+        ]
+      ],
+      "gold_rows": [
+        [
+          "武雨军"
+        ],
+        [
+          "彭小明"
+        ],
+        [
+          "韦华秀"
+        ],
+        [
+          "肖晨斌"
+        ]
+      ],
+      "note": "边界并列"
+    },
+    {
+      "id": "R07",
+      "tier": "ranking",
+      "mode": "rows",
+      "q": "智育测评分最低的三个人是谁？",
+      "ok": true,
+      "why": "",
+      "sec": 6.25,
+      "intent": "sql",
+      "sql": "SELECT \"姓名\", \"智育测评分\" FROM \"综合素质测评情况\" ORDER BY \"智育测评分\" ASC LIMIT 3;",
+      "agent_rows": [
+        [
+          "任立明",
+          39.85
+        ],
+        [
+          "邓子强",
+          40.0
+        ],
+        [
+          "龙子坤",
+          41.43
+        ]
+      ],
+      "gold_rows": [
+        [
+          "任立明"
+        ],
+        [
+          "邓子强"
+        ],
+        [
+          "龙子坤"
+        ]
+      ],
+      "note": "ASC + 集合比较"
+    },
+    {
+      "id": "A01",
+      "tier": "aggregate",
+      "mode": "rows",
+      "q": "每个行政班有多少人？",
+      "ok": true,
+      "why": "",
+      "sec": 7.64,
+      "intent": "sql",
+      "sql": "SELECT \"行政班\", COUNT(*) AS \"人数\" FROM \"综合素质测评情况\" GROUP BY \"行政班\";",
+      "agent_rows": [
+        [
+          2990002.0,
+          32.0
+        ],
+        [
+          2990003.0,
+          31.0
+        ],
+        [
+          2990004.0,
+          31.0
+        ],
+        [
+          2990005.0,
+          30.0
+        ]
+      ],
+      "gold_rows": [
+        [
+          2990002.0,
+          32.0
+        ],
+        [
+          2990003.0,
+          31.0
+        ],
+        [
+          2990004.0,
+          31.0
+        ],
+        [
+          2990005.0,
+          30.0
+        ]
+      ],
+      "note": "GROUP BY 19 组"
+    },
+    {
+      "id": "A02",
+      "tier": "aggregate",
+      "mode": "rows",
+      "q": "每个行政班的平均综合素质测评成绩是多少？",
+      "ok": true,
+      "why": "",
+      "sec": 6.76,
+      "intent": "sql",
+      "sql": "SELECT \"行政班\", AVG(\"综合素质测评成绩\") AS \"平均综合素质测评成绩\" FROM \"综合素质测评情况\" GROUP BY \"行政班\";",
+      "agent_rows": [
+        [
+          2990002.0,
+          74.2471875
+        ],
+        [
+          2990003.0,
+          77.71806451612903
+        ],
+        [
+          2990004.0,
+          75.70032258064516
+        ],
+        [
+          2990005.0,
+          77.65733333333333
+        ]
+      ],
+      "gold_rows": [
+        [
+          2990002.0,
+          74.2471875
+        ],
+        [
+          2990003.0,
+          77.71806451612903
+        ],
+        [
+          2990004.0,
+          75.70032258064516
+        ],
+        [
+          2990005.0,
+          77.65733333333333
+        ]
+      ],
+      "note": "GROUP BY + AVG，浮点容差"
+    },
+    {
+      "id": "A03",
+      "tier": "aggregate",
+      "mode": "scalar",
+      "q": "综合素质测评平均分最高的行政班是哪个？",
+      "ok": true,
+      "why": "",
+      "sec": 6.31,
+      "intent": "sql",
+      "sql": "SELECT \"行政班\", AVG(\"综合素质测评成绩\") AS \"平均分\" FROM \"综合素质测评情况\" GROUP BY \"行政班\" ORDER BY AVG(\"综合素质测评成绩\") DESC LIMIT 1;",
+      "agent_rows": [
+        [
+          2990007.0,
+          83.3492857142857
+        ]
+      ],
+      "gold_rows": [
+        [
+          2990007.0
+        ]
+      ],
+      "note": "分组后取 Top-1（隐含中级难题 4/5）"
+    },
+    {
+      "id": "A04",
+      "tier": "aggregate",
+      "mode": "scalar",
+      "q": "平均智育测评分是多少？",
+      "ok": true,
+      "why": "",
+      "sec": 5.85,
+      "intent": "sql",
+      "sql": "SELECT AVG(\"智育测评分\") AS \"平均智育测评分\" FROM \"综合素质测评情况\";",
+      "agent_rows": [
+        [
+          75.33978910369068
+        ]
+      ],
+      "gold_rows": [
+        [
+          75.33978910369068
+        ]
+      ],
+      "note": "AVG"
+    },
+    {
+      "id": "A05",
+      "tier": "aggregate",
+      "mode": "scalar",
+      "q": "2990003 班的平均智育测评分是多少？",
+      "ok": true,
+      "why": "",
+      "sec": 7.42,
+      "intent": "sql",
+      "sql": "SELECT AVG(\"智育测评分\") AS \"平均智育测评分\" FROM \"综合素质测评情况\" WHERE \"行政班\" = 2990003;",
+      "agent_rows": [
+        [
+          74.1516129032258
+        ]
+      ],
+      "gold_rows": [
+        [
+          74.1516129032258
+        ]
+      ],
+      "note": "过滤 + 聚合"
+    },
+    {
+      "id": "M01",
+      "tier": "multitable",
+      "mode": "scalar",
+      "q": "一共有多少位客户？",
+      "ok": true,
+      "why": "",
+      "sec": 5.36,
+      "intent": "sql",
+      "sql": "SELECT COUNT(*) FROM \"Customer\";",
+      "agent_rows": [
+        [
+          59.0
+        ]
+      ],
+      "gold_rows": [
+        [
+          59.0
+        ]
+      ],
+      "note": "英文库单表"
+    },
+    {
+      "id": "M02",
+      "tier": "multitable",
+      "mode": "scalar",
+      "q": "公司有多少员工？",
+      "ok": false,
+      "why": "未生成 SQL",
+      "sec": 4.61,
+      "intent": "sql",
+      "sql": "",
+      "agent_rows": [],
+      "gold_rows": [
+        [
+          8.0
+        ]
+      ],
+      "note": "中文问英文库"
+    },
+    {
+      "id": "M03",
+      "tier": "multitable",
+      "mode": "scalar",
+      "q": "哪个国家的客户最多？",
+      "ok": true,
+      "why": "",
+      "sec": 5.92,
+      "intent": "sql",
+      "sql": "SELECT Country, COUNT(*) AS CustomerCount FROM Customer WHERE Country IS NOT NULL GROUP BY Country ORDER BY CustomerCount DESC LIMIT 1;",
+      "agent_rows": [
+        [
+          "USA",
+          13.0
+        ]
+      ],
+      "gold_rows": [
+        [
+          "USA"
+        ]
+      ],
+      "note": "分组 Top-1"
+    },
+    {
+      "id": "M04",
+      "tier": "multitable",
+      "mode": "scalar",
+      "q": "客户最多的那个国家有多少位客户？",
+      "ok": true,
+      "why": "",
+      "sec": 6.93,
+      "intent": "sql",
+      "sql": "SELECT COUNT(*) AS customer_count FROM Customer WHERE Country IS NOT NULL GROUP BY Country ORDER BY COUNT(*) DESC LIMIT 1;",
+      "agent_rows": [
+        [
+          13.0
+        ]
+      ],
+      "gold_rows": [
+        [
+          13.0
+        ]
+      ],
+      "note": "嵌套子查询"
+    },
+    {
+      "id": "M05",
+      "tier": "multitable",
+      "mode": "scalar",
+      "q": "销售额最高的专辑是哪个？",
+      "ok": true,
+      "why": "",
+      "sec": 6.61,
+      "intent": "sql",
+      "sql": "SELECT a.\"Title\" AS album_title, ar.\"Name\" AS artist_name, SUM(il.\"UnitPrice\" * il.\"Quantity\") AS total_sales FROM \"Album\" a JOIN \"Track\" t ON t.\"AlbumId\" = a.\"AlbumId\" JOIN \"InvoiceLine\" il ON il.\"TrackId\" = t.\"TrackId\" JOIN \"Artist\" ar ON ar.\"ArtistId\" = a.\"ArtistId\" GROUP BY a.\"AlbumId\", a.\"Title\", ar.\"Name\" ORDER BY total_sales DESC LIMIT 1;",
+      "agent_rows": [
+        [
+          "Battlestar Galactica (Classic), Season 1",
+          "Battlestar Galactica (Classic)",
+          35.82
+        ]
+      ],
+      "gold_rows": [
+        [
+          "Battlestar Galactica (Classic), Season 1"
+        ]
+      ],
+      "note": "三表 JOIN + 聚合排序"
+    },
+    {
+      "id": "M06",
+      "tier": "multitable",
+      "mode": "scalar",
+      "q": "一共有多少首曲目？",
+      "ok": true,
+      "why": "",
+      "sec": 4.84,
+      "intent": "sql",
+      "sql": "SELECT COUNT(*) FROM \"Track\";",
+      "agent_rows": [
+        [
+          3503.0
+        ]
+      ],
+      "gold_rows": [
+        [
+          3503.0
+        ]
+      ],
+      "note": "单表计数"
+    },
+    {
+      "id": "M07",
+      "tier": "multitable",
+      "mode": "scalar",
+      "q": "一共有多少张发票？",
+      "ok": true,
+      "why": "",
+      "sec": 4.64,
+      "intent": "sql",
+      "sql": "SELECT COUNT(*) AS \"发票数量\" FROM \"Invoice\";",
+      "agent_rows": [
+        [
+          412.0
+        ]
+      ],
+      "gold_rows": [
+        [
+          412.0
+        ]
+      ],
+      "note": "单表计数"
+    },
+    {
+      "id": "M08",
+      "tier": "multitable",
+      "mode": "scalar",
+      "q": "员工 Steve Johnson 负责的客户一共产生了多少销售额？",
+      "ok": true,
+      "why": "",
+      "sec": 6.93,
+      "intent": "sql",
+      "sql": "SELECT SUM(\"Invoice\".\"Total\") AS \"TotalSales\" FROM \"Invoice\" JOIN \"Customer\" ON \"Invoice\".\"CustomerId\" = \"Customer\".\"CustomerId\" JOIN \"Employee\" ON \"Customer\".\"SupportRepId\" = \"Employee\".\"EmployeeId\" WHERE \"Employee\".\"FirstName\" = 'Steve' AND \"Employee\".\"LastName\" = 'Johnson';",
+      "agent_rows": [
+        [
+          720.16
+        ]
+      ],
+      "gold_rows": [
+        [
+          720.16
+        ]
+      ],
+      "note": "三表 JOIN + 字符串过滤"
+    },
+    {
+      "id": "M09",
+      "tier": "multitable",
+      "mode": "rows",
+      "q": "每个国家的客户数分别是多少？",
+      "ok": true,
+      "why": "",
+      "sec": 6.05,
+      "intent": "sql",
+      "sql": "SELECT \"Country\", COUNT(*) AS \"CustomerCount\" FROM \"Customer\" GROUP BY \"Country\";",
+      "agent_rows": [
+        [
+          "Argentina",
+          1.0
+        ],
+        [
+          "Australia",
+          1.0
+        ],
+        [
+          "Austria",
+          1.0
+        ],
+        [
+          "Belgium",
+          1.0
+        ]
+      ],
+      "gold_rows": [
+        [
+          "Argentina",
+          1.0
+        ],
+        [
+          "Australia",
+          1.0
+        ],
+        [
+          "Austria",
+          1.0
+        ],
+        [
+          "Belgium",
+          1.0
+        ]
+      ],
+      "note": "分组多行"
+    },
+    {
+      "id": "M10",
+      "tier": "multitable",
+      "mode": "rows",
+      "q": "每种媒体类型有多少首曲目？",
+      "ok": true,
+      "why": "",
+      "sec": 5.57,
+      "intent": "sql",
+      "sql": "SELECT MediaType.Name AS MediaTypeName, COUNT(Track.TrackId) AS TrackCount FROM MediaType LEFT JOIN Track ON MediaType.MediaTypeId = Track.MediaTypeId GROUP BY MediaType.MediaTypeId, MediaType.Name;",
+      "agent_rows": [
+        [
+          "MPEG audio file",
+          3034.0
+        ],
+        [
+          "Protected AAC audio file",
+          237.0
+        ],
+        [
+          "Protected MPEG-4 video file",
+          214.0
+        ],
+        [
+          "Purchased AAC audio file",
+          7.0
+        ]
+      ],
+      "gold_rows": [
+        [
+          "MPEG audio file",
+          3034.0
+        ],
+        [
+          "Protected AAC audio file",
+          237.0
+        ],
+        [
+          "Protected MPEG-4 video file",
+          214.0
+        ],
+        [
+          "Purchased AAC audio file",
+          7.0
+        ]
+      ],
+      "note": "两表 JOIN + 分组"
+    }
+  ]
+}

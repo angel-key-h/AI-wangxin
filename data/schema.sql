@@ -223,7 +223,7 @@ CREATE TABLE IF NOT EXISTS "law_ArmstrongFlooringInc_20190107_8K_EX1" (
 );
 -- 字段: 说明、内容
 
--- 来源: rag_data/【电子学院2025级电子工程类综测素质测评结果】综合素质测评情况.xlsx（由 rag_data 结构化文件自动建表）；行数: 569；列数: 23
+-- 来源: rag_data/【示例大学2025级电子信息类】综合素质测评情况.xlsx（由 rag_data 结构化文件自动建表）；行数: 569；列数: 23
 CREATE TABLE IF NOT EXISTS "综合素质测评情况" (
 "学号" INTEGER,
   "姓名" TEXT,
@@ -260,6 +260,6 @@ CREATE TABLE IF NOT EXISTS "综合素质测评情况" (
 --   finance_JPMORGAN_2022_10K_page3  ←  rag_data/finance_JPMORGAN_2022_10K.xlsx  （6 行 × 2 列）
 --   finance_JPMORGAN_2023Q2_10Q  ←  rag_data/finance_JPMORGAN_2023Q2_10Q.csv  （49 行 × 16 列）
 --   law_ArmstrongFlooringInc_20190107_8K_EX1  ←  rag_data/law_ArmstrongFlooringInc_20190107_8-K_EX-10.2_11471795_EX-10.2_Intellectual_Prop.xlsx  （1 行 × 2 列）
---   综合素质测评情况  ←  rag_data/【电子学院2025级电子工程类综测素质测评结果】综合素质测评情况.xlsx  （569 行 × 23 列）
+--   综合素质测评情况  ←  rag_data/【示例大学2025级电子信息类】综合素质测评情况.xlsx  （569 行 × 23 列）
 
 -- 合计 16 张表 / 16241 行

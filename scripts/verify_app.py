@@ -55,7 +55,7 @@ else:
     # 多轮：追问必须能在界面上看到「指代消解」这一步。
     # 多轮能力如果不可见，评委既无法确认它生效，答偏时也无从归因 —— 这正是
     # 可解释性评分项要的东西，所以要进回归。
-    at.chat_input[0].set_value("胡子扬的德育测评分是多少？").run()
+    at.chat_input[0].set_value("贾淑兰的德育测评分是多少？").run()
     at.chat_input[0].set_value("那他的智育测评分呢？").run()
     check("追问后无异常", not at.exception, "; ".join(str(e.value) for e in at.exception[:2]))
     info_txt = " ".join(str(i.value) for i in at.info)

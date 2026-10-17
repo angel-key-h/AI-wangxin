@@ -24,7 +24,7 @@ from tools.file_utils import TEXT_ENCODINGS, sniff_kind
 
 META_SUFFIX = ".meta.json"
 MAX_TABLE_NAME = 40
-# 连括号带内容一起删掉（文件名里的【电子学院2025级…】这类前缀对问数没有信息量，
+# 连括号带内容一起删掉（文件名里的【示例大学2025级…】这类前缀对问数没有信息量，
 # 只删括号字符会留下又长又没用的表名）
 _BRACKETED = re.compile(r"[【\[（(《<][^】\]）)》>]*[】\]）)》>]")
 _WHITESPACE = re.compile(r"[\s\u3000.\-]+")

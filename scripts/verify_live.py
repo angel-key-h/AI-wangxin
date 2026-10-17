@@ -134,12 +134,12 @@ from tools.explain import highlight, query_terms, snippet_html  # noqa: E402
 from tools.doc_quality import plan_for_text  # noqa: E402
 
 # 高亮必须**逐字保真**：片段里的 LaTeX 与竖线不能被 Markdown 吃掉
-_snip = "胡子扬 的智育测评分是 92.5，见 \\begin{tabular}{|c|c|} 与 $E=mc^2$"
-_terms = query_terms("胡子扬的智育测评分是多少", vocab=["智育测评分", "胡子扬"])
+_snip = "贾淑兰 的智育测评分是 92.5，见 \\begin{tabular}{|c|c|} 与 $E=mc^2$"
+_terms = query_terms("贾淑兰的智育测评分是多少", vocab=["智育测评分", "贾淑兰"])
 _html, _hits = snippet_html(_snip, _terms)
 # 命中必须是**完整词**：「的智育测」「评分是」这种跨词边界的 4-gram 抢位
 # 会让高亮看起来像是系统认错了词（强词锚定就是为这件事加的）
-check("高亮命中完整实体与指标", set(_hits) >= {"胡子扬", "智育测评分"}, f"hits={_hits}")
+check("高亮命中完整实体与指标", set(_hits) >= {"贾淑兰", "智育测评分"}, f"hits={_hits}")
 check("高亮保留 LaTeX 字面（不被 Markdown 解析）",
       "\\begin{tabular}" in _html and "$E=mc^2$" in _html, f"html={_html[:120]}")
 check("高亮不残留未闭合标签", _html.count("<mark") == _html.count("</mark>") == len(_hits))

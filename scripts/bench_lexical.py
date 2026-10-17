@@ -29,10 +29,10 @@ SIZES = [500, 2000, 8000, 32000]
 DIM = 16
 # 贴近真实问题：既含字母数字实体，也含中文
 QUESTIONS = [
-    "胡子扬的综合素质测评成绩和排名是多少？",
+    "贾淑兰的综合素质测评成绩和排名是多少？",
     "What was the total interest cost on debt balances for 2020?",
     "JPMORGAN 的净收入是多少",
-    "第 2112503 班有多少人",
+    "第 2990004 班有多少人",
 ]
 # 与 rag_tool._lexical_hits 一致的区分度判据
 DF_MIN, DF_RATIO = 20, 0.25
@@ -40,14 +40,14 @@ DF_MIN, DF_RATIO = 20, 0.25
 
 def make_docs(n):
     """造 n 段带可检索实体的短文本（模拟按行/按块入库的知识库）"""
-    names = ["胡子扬", "杜佳玲", "吴絮", "曾欣妍", "权晓蕊", "杨梓豪", "林恺一", "王嘉伟"]
+    names = ["贾淑兰", "徐雨军", "邵海", "刘志菲", "邵晓秀", "武雨军", "龙轩琪", "梁娟红"]
     words = ["interest", "revenue", "deposits", "loans", "capital", "guideline",
              "agreement", "section", "compliance", "payment"]
     docs = []
     for i in range(n):
         docs.append(
             f"学号: {2025000000 + i}；姓名: {names[i % len(names)]}；"
-            f"行政班: {2112501 + (i % 19)}；"
+            f"行政班: {2990002 + (i % 19)}；"
             f"综合素质测评成绩: {60 + (i % 45)}.5；"
             f"{words[i % len(words)]} amount {i % 997} thousand；"
             f"clause {i % 53} of the {words[(i + 3) % len(words)]} agreement"

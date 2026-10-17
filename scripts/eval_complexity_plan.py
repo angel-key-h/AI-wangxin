@@ -50,7 +50,7 @@ def check(name, ok, detail=""):
 _CN = "综合素质测评工作由学院统一组织，各班级要认真核对数据，确保信息准确无误。"
 _TABLE1 = (r"\begin{tabular}{|c|c|c|}" "\n" r"\hline" "\n"
            r"姓名 & 智育测评分 & 排名 \\" "\n" r"\hline" "\n"
-           r"胡子扬 & 92.5 & 1 \\" "\n" r"\hline" "\n" r"\end{tabular}")
+           r"贾淑兰 & 92.5 & 1 \\" "\n" r"\hline" "\n" r"\end{tabular}")
 _FORMULA = (r"由定义可得 $E = mc^2$，代入 \begin{equation}"
             r"\frac{\partial u}{\partial t}=\alpha\nabla^2 u\end{equation}"
             r" 并利用 $\sum_{i=1}^{n} x_i = \mu$、$\int_0^\infty e^{-x}dx=1$")
